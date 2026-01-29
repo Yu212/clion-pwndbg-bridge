@@ -1,0 +1,21 @@
+<idea-plugin>
+    <id>com.yu212.pwndbgbridge</id>
+    <name>Pwndbg Bridge</name>
+    <vendor email="yu212.mc@gmail.com">Yu_212</vendor>
+
+    <depends>com.intellij.modules.clion</depends>
+
+    <idea-version since-build="253"/>
+
+    <dependencies>
+        <module name="intellij.platform.dap"/>
+    </dependencies>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Pwndbg"
+                    anchor="right"
+                    factoryClass="com.yu212.pwndbg.ui.PwndbgToolWindowFactory"/>
+
+        <postStartupActivity implementation="com.yu212.pwndbg.PwndbgStartupActivity"/>
+    </extensions>
+</idea-plugin>
