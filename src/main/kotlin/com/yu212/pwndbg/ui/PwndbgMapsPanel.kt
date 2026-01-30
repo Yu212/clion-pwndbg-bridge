@@ -52,7 +52,7 @@ class PwndbgMapsPanel(private val project: Project) : Disposable {
             printResult(checksecView, output, error)
             service.executeCommandCapture("vmmap") { output2, error2 ->
                 printResult(vmmapView, output2, error2)
-                service.executeCommandCapture("got") { output3, error3 ->
+                service.executeCommandCapture("got -r") { output3, error3 ->
                     printResult(gotView, output3, error3)
                     service.executeCommandCapture("plt") { output4, error4 ->
                         printResult(pltView, output4, error4)
