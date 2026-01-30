@@ -9,7 +9,6 @@ import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
-import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.components.BorderLayoutPanel
 import java.awt.BorderLayout
 import java.awt.GridLayout
@@ -20,7 +19,7 @@ import javax.swing.JPanel
 class PwndbgPanel(project: Project) : Disposable {
     private val consoleView: ConsoleView = ConsoleViewImpl(project, true)
     private val ansiDecoder = AnsiEscapeDecoder()
-    private val inputField = JBTextField()
+    private val inputField = CommandHistoryField()
     private val sendButton = JButton("Send")
     private val rootPanel = BorderLayoutPanel()
     private var lastCommand: String? = null
@@ -42,6 +41,7 @@ class PwndbgPanel(project: Project) : Disposable {
             if (command.isNullOrEmpty()) return@ActionListener
             if (text.isNotEmpty()) {
                 lastCommand = text
+                inputField.addHistory(text)
             }
             inputField.text = ""
             project.getService(PwndbgService::class.java).executeUserCommand(command)

@@ -5,7 +5,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.components.BorderLayoutPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -16,8 +15,8 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 
 class PwndbgAddressPanel(private val project: Project) : Disposable {
-    private val addressField = JBTextField()
-    private val xFormatField = JBTextField("16gx")
+    private val addressField = CommandHistoryField()
+    private val xFormatField = CommandHistoryField("16gx")
     private val runButton = JButton("Inspect")
     private val xTitleLabel = JLabel("x/")
     private val xinfoView = CollapsibleSection("xinfo", project)
@@ -64,6 +63,8 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         val baseAddress = addressField.text.trim()
         if (baseAddress.isEmpty()) return
         val xFormat = xFormatField.text.trim().ifEmpty { "16gx" }
+        addressField.addHistory(baseAddress)
+        xFormatField.addHistory(xFormat)
 
         xinfoView.clear()
         telescopeView.clear()
@@ -102,6 +103,7 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         val baseAddress = addressField.text.trim()
         if (baseAddress.isEmpty()) return
         val xFormat = xFormatField.text.trim().ifEmpty { "16gx" }
+        xFormatField.addHistory(xFormat)
         updateXTitle(xFormat)
         memoryView.clear()
         val service = project.getService(PwndbgService::class.java)
