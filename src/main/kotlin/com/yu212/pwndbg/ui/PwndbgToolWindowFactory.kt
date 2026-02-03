@@ -51,5 +51,7 @@ class PwndbgToolWindowFactory : ToolWindowFactory {
 
         project.getService(PwndbgService::class.java)
             .attachPanels(mainPanel, contextPanel, mapsPanel)
+        project.getService(PwndbgService::class.java)
+            .attachBreakpointsPanel(breakpointsPanel)
     }
 }

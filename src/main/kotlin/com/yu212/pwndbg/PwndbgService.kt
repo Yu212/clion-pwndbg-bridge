@@ -4,6 +4,7 @@ import com.yu212.pwndbg.debug.CidrSessionBridge
 import com.yu212.pwndbg.ui.PwndbgContextPanel
 import com.yu212.pwndbg.ui.PwndbgMapsPanel
 import com.yu212.pwndbg.ui.PwndbgPanel
+import com.yu212.pwndbg.ui.PwndbgBreakpointsPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
@@ -34,6 +35,9 @@ class PwndbgService(private val project: Project) : Disposable {
 
     @Volatile
     private var mapsPanel: PwndbgMapsPanel? = null
+
+    @Volatile
+    private var breakpointsPanel: PwndbgBreakpointsPanel? = null
 
     @Volatile
     private var lastUnsupportedProcessClass: String? = null
@@ -69,6 +73,7 @@ class PwndbgService(private val project: Project) : Disposable {
                     ToolWindowManager.getInstance(project).getToolWindow("Pwndbg")?.show()
                 }
                 mapsPanel?.refreshAll()
+                breakpointsPanel?.refreshAll()
             }
 
             override fun processStopped(debugProcess: XDebugProcess) {
@@ -77,6 +82,7 @@ class PwndbgService(private val project: Project) : Disposable {
                 currentBridge?.dispose()
                 currentBridge = null
                 stopSocat()
+                breakpointsPanel?.refreshAll()
             }
         })
     }
@@ -127,12 +133,17 @@ class PwndbgService(private val project: Project) : Disposable {
         currentBridge?.attachPanel(panel)
     }
 
+    fun attachBreakpointsPanel(panel: PwndbgBreakpointsPanel) {
+        this.breakpointsPanel = panel
+    }
+
     override fun dispose() {
         currentBridge?.dispose()
         currentBridge = null
         panel = null
         contextPanel = null
         mapsPanel = null
+        breakpointsPanel = null
         stopSocat()
     }
 
