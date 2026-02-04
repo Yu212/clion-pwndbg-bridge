@@ -1,22 +1,22 @@
 package com.yu212.pwndbg.debug
 
-import com.yu212.pwndbg.ui.PwndbgContextPanel
-import com.yu212.pwndbg.ui.PwndbgPanel
+import com.intellij.execution.console.LanguageConsoleView
 import com.intellij.execution.process.ProcessAdapter
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputTypes
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.execution.console.LanguageConsoleView
-import com.intellij.openapi.Disposable
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.util.TextRange
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebugSessionListener
 import com.jetbrains.cidr.execution.debugger.CidrDebugProcess
 import com.jetbrains.cidr.execution.debugger.backend.dap.DapDriver
+import com.yu212.pwndbg.ui.PwndbgContextPanel
+import com.yu212.pwndbg.ui.PwndbgPanel
 import org.eclipse.lsp4j.debug.EvaluateArguments
-import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.event.DocumentListener
-import com.intellij.openapi.util.TextRange
 
 class CidrSessionBridge(
     private val xDebugSession: XDebugSession,

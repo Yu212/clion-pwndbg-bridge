@@ -1,27 +1,24 @@
 package com.yu212.pwndbg.ui
 
-import com.yu212.pwndbg.PwndbgService
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.Project
-import com.intellij.ui.components.JBScrollPane
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.icons.AllIcons
+import com.intellij.openapi.project.Project
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
+import com.yu212.pwndbg.PwndbgService
 import java.awt.BorderLayout
 import java.awt.Dimension
-import javax.swing.BoxLayout
-import javax.swing.JButton
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JPanel
+import java.awt.FlowLayout
+import javax.swing.*
 
 class PwndbgAddressPanel(private val project: Project) : Disposable {
     private val addressField = CommandHistoryField()
     private val xFormatField = CommandHistoryField("16gx")
     private val runButton = JButton("Inspect")
     private val xTitleLabel = JLabel("x/")
+    private val xHeader = JPanel(FlowLayout(FlowLayout.LEFT, 6, 0))
     private val xinfoView = CollapsibleSection("xinfo", project)
     private val telescopeTitleLabel = JLabel()
     private val telescopeDecreaseAction = object : AnAction("", null, AllIcons.General.Remove) {
@@ -35,7 +32,7 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         project = project,
         extraActions = listOf(telescopeDecreaseAction, telescopeIncreaseAction)
     )
-    private val memoryView = CollapsibleSection(xTitleLabel, project)
+    private val memoryView = CollapsibleSection(xHeader, project)
     private val rootPanel = BorderLayoutPanel()
     private val outputPanel = JPanel()
     private var telescopeLines = 8
@@ -43,16 +40,13 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
     init {
         val inputPanel = JPanel(BorderLayout(8, 0))
         val addressLabel = JLabel("Address")
-        val xLabel = JLabel("x/")
-        xFormatField.preferredSize = Dimension(100, xFormatField.preferredSize.height)
-
-        val rightPanel = JPanel(BorderLayout(6, 0))
-        rightPanel.add(xLabel, BorderLayout.WEST)
-        rightPanel.add(xFormatField, BorderLayout.CENTER)
-
         inputPanel.add(addressLabel, BorderLayout.WEST)
         inputPanel.add(addressField, BorderLayout.CENTER)
-        inputPanel.add(rightPanel, BorderLayout.EAST)
+
+        xFormatField.preferredSize = Dimension(100, xFormatField.preferredSize.height)
+        xHeader.add(xTitleLabel)
+        xHeader.add(xFormatField)
+        xHeader.isOpaque = false
 
         val inputRow = JPanel(BorderLayout(8, 0))
         inputRow.add(inputPanel, BorderLayout.CENTER)
@@ -82,7 +76,6 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         addressField.addHistory(baseAddress)
         xFormatField.addHistory(xFormat)
 
-        updateXTitle(xFormat)
         telescopeLines = 8
         updateTelescopeTitle()
 
@@ -119,7 +112,6 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         if (baseAddress.isEmpty()) return
         val xFormat = xFormatField.text.trim().ifEmpty { "16gx" }
         xFormatField.addHistory(xFormat)
-        updateXTitle(xFormat)
         val service = project.getService(PwndbgService::class.java)
         val xCommand = "x/$xFormat $baseAddress"
         service.executeCommandCapture(xCommand) { output, error ->
@@ -140,10 +132,6 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         }
     }
 
-    private fun updateXTitle(format: String) {
-        xTitleLabel.text = "x/$format"
-    }
-
     private fun updateTelescopeTitle() {
         telescopeTitleLabel.text = "telescope $telescopeLines"
     }
@@ -153,5 +141,4 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         telescopeView.dispose()
         memoryView.dispose()
     }
-
 }

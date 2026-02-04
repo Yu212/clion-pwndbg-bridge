@@ -1,15 +1,15 @@
 package com.yu212.pwndbg.ui
 
-import com.yu212.pwndbg.PwndbgService
+import com.intellij.execution.impl.ConsoleViewImpl
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.execution.impl.ConsoleViewImpl
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.util.ui.components.BorderLayoutPanel
+import com.yu212.pwndbg.PwndbgService
 import java.awt.BorderLayout
 import java.awt.GridLayout
 import javax.swing.JButton
@@ -37,7 +37,7 @@ class PwndbgPanel(project: Project) : Disposable {
 
         val action = java.awt.event.ActionListener {
             val text = inputField.text.trim()
-            val command = if (text.isEmpty()) lastCommand else text
+            val command = text.ifEmpty { lastCommand }
             if (command.isNullOrEmpty()) return@ActionListener
             if (text.isNotEmpty()) {
                 lastCommand = text

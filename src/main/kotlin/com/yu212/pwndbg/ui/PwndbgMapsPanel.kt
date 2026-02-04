@@ -1,16 +1,12 @@
 package com.yu212.pwndbg.ui
 
-import com.yu212.pwndbg.PwndbgService
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
+import com.yu212.pwndbg.PwndbgService
 import java.awt.BorderLayout
-import javax.swing.BoxLayout
-import javax.swing.JButton
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JPanel
+import javax.swing.*
 
 class PwndbgMapsPanel(private val project: Project) : Disposable {
     private val vmmapView = CollapsibleSection("vmmap", project)

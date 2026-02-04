@@ -11,15 +11,8 @@ import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.util.ui.components.BorderLayoutPanel
 import java.awt.BorderLayout
 import java.awt.Font
-import java.util.Hashtable
-import java.util.TreeSet
-import javax.swing.AbstractAction
-import javax.swing.JButton
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.JSlider
-import javax.swing.KeyStroke
+import java.util.*
+import javax.swing.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 
@@ -83,7 +76,6 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
                     val start = offset
                     offset += chunk.length
                     val type = ConsoleViewContentType.getConsoleViewType(attrs)
-                        ?: if (isError) ConsoleViewContentType.ERROR_OUTPUT else ConsoleViewContentType.NORMAL_OUTPUT
                     val attributes = type.attributes ?: continue
                     editor.markupModel.addRangeHighlighter(
                         start,

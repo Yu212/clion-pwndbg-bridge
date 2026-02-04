@@ -1,12 +1,12 @@
 package com.yu212.pwndbg.ui
 
-import com.yu212.pwndbg.PwndbgService
 import com.intellij.execution.ui.RunnerLayoutUi
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
-import com.intellij.openapi.util.Disposer
 import com.intellij.ui.content.ContentFactory
+import com.yu212.pwndbg.PwndbgService
 
 class PwndbgToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {

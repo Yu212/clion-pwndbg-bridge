@@ -1,6 +1,5 @@
 package com.yu212.pwndbg.ui
 
-import com.yu212.pwndbg.PwndbgService
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -11,26 +10,14 @@ import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBList
 import com.intellij.util.ui.JBUI
 import com.intellij.xdebugger.XDebuggerManager
-import com.intellij.xdebugger.breakpoints.XBreakpoint
-import com.intellij.xdebugger.breakpoints.XBreakpointListener
-import com.intellij.xdebugger.breakpoints.XBreakpointProperties
-import com.intellij.xdebugger.breakpoints.XLineBreakpoint
-import com.intellij.xdebugger.breakpoints.XBreakpointType
+import com.intellij.xdebugger.breakpoints.*
+import com.yu212.pwndbg.PwndbgService
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Font
 import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
-import javax.swing.AbstractAction
-import javax.swing.DefaultListModel
-import javax.swing.JCheckBox
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JList
-import javax.swing.JPanel
-import javax.swing.KeyStroke
-import javax.swing.ListCellRenderer
-import javax.swing.SwingUtilities
+import javax.swing.*
 
 class PwndbgBreakpointsPanel(private val project: Project) : Disposable {
     private val model = DefaultListModel<BreakpointEntry>()

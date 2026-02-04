@@ -5,12 +5,11 @@ import com.intellij.ui.components.JBTextField
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import javax.swing.AbstractAction
-import javax.swing.JComponent
 import javax.swing.KeyStroke
 
 class CommandHistoryField(
     initialText: String = "",
-    private val maxHistory: Int = 200
+    private val maxHistory: Int = 1000
 ) : JBTextField(initialText) {
     private data class HistoryEntry(val index: Int, val text: String) {
         override fun toString(): String = text
@@ -57,7 +56,7 @@ class CommandHistoryField(
     }
 
     private fun installHistoryBindings() {
-        val inputMap = getInputMap(JComponent.WHEN_FOCUSED)
+        val inputMap = getInputMap(WHEN_FOCUSED)
         val actionMap = actionMap
 
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0), "historyUp")
@@ -88,10 +87,10 @@ class CommandHistoryField(
         }
         val newIndex = (historyIndex + delta).coerceIn(0, history.size)
         historyIndex = newIndex
-        if (historyIndex == history.size) {
-            text = pendingText ?: ""
+        text = if (historyIndex == history.size) {
+            pendingText ?: ""
         } else {
-            text = history[historyIndex]
+            history[historyIndex]
         }
         caretPosition = text.length
     }

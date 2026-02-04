@@ -2,6 +2,7 @@ package com.yu212.pwndbg.ui
 
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
+import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
@@ -15,7 +16,6 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.project.Project
-import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.util.ui.components.BorderLayoutPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -135,10 +135,6 @@ private class AnsiViewer(project: Project) : Disposable {
             isRightMarginShown = false
             isCaretRowShown = false
         }
-    }
-
-    fun clear() {
-        setText("", isError = false)
     }
 
     fun setText(text: String, isError: Boolean, onUiUpdated: (() -> Unit)? = null) {

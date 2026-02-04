@@ -1,10 +1,5 @@
 package com.yu212.pwndbg
 
-import com.yu212.pwndbg.debug.CidrSessionBridge
-import com.yu212.pwndbg.ui.PwndbgContextPanel
-import com.yu212.pwndbg.ui.PwndbgMapsPanel
-import com.yu212.pwndbg.ui.PwndbgPanel
-import com.yu212.pwndbg.ui.PwndbgBreakpointsPanel
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
@@ -16,6 +11,11 @@ import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.XDebuggerManagerListener
 import com.jetbrains.cidr.execution.debugger.CidrDebugProcess
 import com.jetbrains.cidr.execution.debugger.backend.dap.DapDriver
+import com.yu212.pwndbg.debug.CidrSessionBridge
+import com.yu212.pwndbg.ui.PwndbgBreakpointsPanel
+import com.yu212.pwndbg.ui.PwndbgContextPanel
+import com.yu212.pwndbg.ui.PwndbgMapsPanel
+import com.yu212.pwndbg.ui.PwndbgPanel
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
