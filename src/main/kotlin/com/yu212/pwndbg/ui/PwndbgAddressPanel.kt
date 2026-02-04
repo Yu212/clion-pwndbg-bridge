@@ -5,6 +5,9 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.icons.AllIcons
 import com.intellij.util.ui.components.BorderLayoutPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -20,10 +23,22 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
     private val runButton = JButton("Inspect")
     private val xTitleLabel = JLabel("x/")
     private val xinfoView = CollapsibleSection("xinfo", project)
-    private val telescopeView = CollapsibleSection("telescope", project)
+    private val telescopeTitleLabel = JLabel()
+    private val telescopeDecreaseAction = object : AnAction("", null, AllIcons.General.Remove) {
+        override fun actionPerformed(e: AnActionEvent) = updateTelescopeLines(-1)
+    }
+    private val telescopeIncreaseAction = object : AnAction("", null, AllIcons.General.Add) {
+        override fun actionPerformed(e: AnActionEvent) = updateTelescopeLines(1)
+    }
+    private val telescopeView = CollapsibleSection(
+        titleComponent = telescopeTitleLabel,
+        project = project,
+        extraActions = listOf(telescopeDecreaseAction, telescopeIncreaseAction)
+    )
     private val memoryView = CollapsibleSection(xTitleLabel, project)
     private val rootPanel = BorderLayoutPanel()
     private val outputPanel = JPanel()
+    private var telescopeLines = 8
 
     init {
         val inputPanel = JPanel(BorderLayout(8, 0))
@@ -54,6 +69,7 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         runButton.addActionListener { inspectAddress() }
         addressField.addActionListener { inspectAddress() }
         xFormatField.addActionListener { updateMemoryOnly() }
+        updateTelescopeTitle()
     }
 
     val component: JComponent
@@ -66,16 +82,15 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         addressField.addHistory(baseAddress)
         xFormatField.addHistory(xFormat)
 
-        xinfoView.clear()
-        telescopeView.clear()
-        memoryView.clear()
         updateXTitle(xFormat)
+        telescopeLines = 8
+        updateTelescopeTitle()
 
         val service = project.getService(PwndbgService::class.java)
 
         service.executeCommandCapture("xinfo $baseAddress") { output, error ->
             printResult(xinfoView, output, error)
-            service.executeCommandCapture("telescope $baseAddress") { output2, error2 ->
+            service.executeCommandCapture("telescope $baseAddress $telescopeLines") { output2, error2 ->
                 printResult(telescopeView, output2, error2)
                 val xCommand = "x/$xFormat $baseAddress"
                 service.executeCommandCapture(xCommand) { output3, error3 ->
@@ -105,7 +120,6 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         val xFormat = xFormatField.text.trim().ifEmpty { "16gx" }
         xFormatField.addHistory(xFormat)
         updateXTitle(xFormat)
-        memoryView.clear()
         val service = project.getService(PwndbgService::class.java)
         val xCommand = "x/$xFormat $baseAddress"
         service.executeCommandCapture(xCommand) { output, error ->
@@ -113,8 +127,25 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         }
     }
 
+    private fun updateTelescopeLines(delta: Int) {
+        val nextValue = (telescopeLines + delta).coerceAtLeast(1)
+        if (nextValue == telescopeLines) return
+        telescopeLines = nextValue
+        updateTelescopeTitle()
+        val baseAddress = addressField.text.trim()
+        if (baseAddress.isEmpty()) return
+        val service = project.getService(PwndbgService::class.java)
+        service.executeCommandCapture("telescope $baseAddress $telescopeLines") { output, error ->
+            printResult(telescopeView, output, error)
+        }
+    }
+
     private fun updateXTitle(format: String) {
         xTitleLabel.text = "x/$format"
+    }
+
+    private fun updateTelescopeTitle() {
+        telescopeTitleLabel.text = "telescope $telescopeLines"
     }
 
     override fun dispose() {

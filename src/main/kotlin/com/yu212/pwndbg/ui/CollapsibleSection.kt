@@ -28,10 +28,15 @@ class CollapsibleSection(
     title: String,
     project: Project,
     startCollapsed: Boolean = false,
-    titleComponent: JComponent? = null
+    titleComponent: JComponent? = null,
+    extraActions: List<AnAction> = emptyList()
 ) : BorderLayoutPanel(), Disposable {
-    constructor(titleComponent: JComponent, project: Project, startCollapsed: Boolean = false) :
-        this("", project, startCollapsed, titleComponent)
+    constructor(
+        titleComponent: JComponent,
+        project: Project,
+        startCollapsed: Boolean = false,
+        extraActions: List<AnAction> = emptyList()
+    ) : this("", project, startCollapsed, titleComponent, extraActions)
     private val header = JPanel(BorderLayout(6, 0))
     private val headerLabel = JLabel(title)
     private val viewer = AnsiViewer(project)
@@ -46,7 +51,7 @@ class CollapsibleSection(
             e.presentation.icon = if (collapsed) AllIcons.General.ArrowRight else AllIcons.General.ArrowDown
         }
     }
-    private val toolbar = createToolbar()
+    private val toolbar = createToolbar(extraActions)
 
     val component: JComponent
         get() = this
@@ -62,8 +67,10 @@ class CollapsibleSection(
         updateSizeHints()
     }
 
-    private fun createToolbar(): JComponent {
-        val group = DefaultActionGroup(toggleAction)
+    private fun createToolbar(extraActions: List<AnAction>): JComponent {
+        val group = DefaultActionGroup()
+        extraActions.forEach { group.add(it) }
+        group.add(toggleAction)
         val toolbar = ActionManager.getInstance().createActionToolbar("PwndbgCollapse", group, true)
         (toolbar as? ActionToolbarImpl)?.setReservePlaceAutoPopupIcon(false)
         toolbar.targetComponent = this
@@ -94,10 +101,6 @@ class CollapsibleSection(
         minimumSize = Dimension(0, headerHeight)
         preferredSize = Dimension(0, totalHeight)
         maximumSize = Dimension(Int.MAX_VALUE, totalHeight)
-    }
-
-    fun clear() {
-        viewer.clear()
     }
 
     fun setText(text: String, isError: Boolean) {

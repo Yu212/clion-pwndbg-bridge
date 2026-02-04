@@ -42,11 +42,6 @@ class PwndbgMapsPanel(private val project: Project) : Disposable {
         get() = rootPanel
 
     fun refreshAll() {
-        checksecView.clear()
-        vmmapView.clear()
-        gotView.clear()
-        pltView.clear()
-
         val service = project.getService(PwndbgService::class.java)
         service.executeCommandCapture("checksec") { output, error ->
             printResult(checksecView, output, error)
