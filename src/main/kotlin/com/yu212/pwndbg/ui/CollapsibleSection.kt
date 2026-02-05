@@ -126,7 +126,7 @@ private class AnsiViewer(project: Project) : Disposable {
         val ex = editor as? EditorEx
         if (ex != null) {
             ex.scrollPane.verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER
-            ex.scrollPane.horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+            ex.scrollPane.horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
         }
         editor.settings.apply {
             isLineNumbersShown = false
@@ -134,6 +134,7 @@ private class AnsiViewer(project: Project) : Disposable {
             isFoldingOutlineShown = false
             isRightMarginShown = false
             isCaretRowShown = false
+            isUseSoftWraps = false
         }
     }
 
