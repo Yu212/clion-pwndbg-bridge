@@ -1,12 +1,21 @@
 package com.yu212.pwndbg.ui
 
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
 import java.awt.BorderLayout
-import javax.swing.*
+import javax.swing.BoxLayout
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JPanel
 
 class PwndbgMapsPanel(private val project: Project) : Disposable {
     private val vmmapView = CollapsibleSection("vmmap", project)
@@ -15,12 +24,17 @@ class PwndbgMapsPanel(private val project: Project) : Disposable {
     private val pltView = CollapsibleSection("plt", project)
     private val rootPanel = BorderLayoutPanel()
     private val outputPanel = JPanel()
+    private val refreshAction = object : AnAction("Refresh", "Refresh maps", AllIcons.Actions.Refresh) {
+        override fun actionPerformed(e: AnActionEvent) {
+            refreshAll()
+        }
+    }
+    private val actionToolbar = createActionToolbar()
 
     init {
         val toolbar = JPanel(BorderLayout(8, 0))
-        val refreshButton = JButton("Refresh")
         toolbar.add(JLabel("Maps / GOT / PLT"), BorderLayout.WEST)
-        toolbar.add(refreshButton, BorderLayout.EAST)
+        toolbar.add(actionToolbar.component, BorderLayout.EAST)
 
         outputPanel.layout = BoxLayout(outputPanel, BoxLayout.Y_AXIS)
         outputPanel.add(checksecView.component)
@@ -31,7 +45,7 @@ class PwndbgMapsPanel(private val project: Project) : Disposable {
         rootPanel.addToTop(toolbar)
         rootPanel.addToCenter(JBScrollPane(outputPanel))
 
-        refreshButton.addActionListener { refreshAll() }
+        actionToolbar.component.isOpaque = false
     }
 
     val component: JComponent
@@ -74,4 +88,12 @@ class PwndbgMapsPanel(private val project: Project) : Disposable {
         pltView.dispose()
     }
 
+    private fun createActionToolbar(): com.intellij.openapi.actionSystem.ActionToolbar {
+        val group = DefaultActionGroup()
+        group.add(refreshAction)
+        val toolbar = ActionManager.getInstance().createActionToolbar("PwndbgMapsActions", group, true)
+        (toolbar as? ActionToolbarImpl)?.setReservePlaceAutoPopupIcon(false)
+        toolbar.targetComponent = rootPanel
+        return toolbar
+    }
 }

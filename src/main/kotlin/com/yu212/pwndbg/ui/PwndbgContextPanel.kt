@@ -3,12 +3,20 @@ package com.yu212.pwndbg.ui
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleViewContentType
+import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnAction
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
+import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
+import com.yu212.pwndbg.PwndbgService
 import java.awt.BorderLayout
 import java.awt.Font
 import java.util.*
@@ -16,7 +24,7 @@ import javax.swing.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 
-class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Disposable {
+class PwndbgContextPanel(private val project: Project) : Disposable {
     private data class ContextEntry(
         val text: String,
         val isError: Boolean
@@ -34,10 +42,27 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
     private val nextButton = JButton(">")
     private val latestButton = JButton(">>")
     private val statusLabel = JLabel("Latest")
-    private val bookmarkButton = JButton("Bookmark")
+    private val refreshAction = object : AnAction("Refresh Context", "Refresh context", AllIcons.Actions.Refresh) {
+        override fun actionPerformed(e: AnActionEvent) {
+            refreshContext()
+        }
+    }
+    private val pinAction = object : AnAction("Add Pin", "Add pin", AllIcons.General.Pin) {
+        override fun actionPerformed(e: AnActionEvent) {
+            togglePinAtCurrent()
+        }
+
+        override fun update(e: AnActionEvent) {
+            val marked = historyIndex >= 0 && pins.contains(historyIndex)
+            e.presentation.isEnabled = history.isNotEmpty()
+            e.presentation.icon = if (marked) AllIcons.General.PinSelected else AllIcons.General.Pin
+            e.presentation.text = if (marked) "Remove Pin" else "Add Pin"
+        }
+    }
     private val timelineSlider = JSlider()
     private val rootPanel = BorderLayoutPanel()
-    private val bookmarks = TreeSet<Int>()
+    private val actionToolbar = createActionToolbar()
+    private val pins = TreeSet<Int>()
     private var sliderUpdating = false
 
     val component: JComponent
@@ -45,7 +70,7 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
 
     fun clearOutput() {
         history.clear()
-        bookmarks.clear()
+        pins.clear()
         historyIndex = -1
         updateNavigationState()
         setContextOutput("", isError = false)
@@ -105,20 +130,32 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
 
         if (history.size >= maxHistory) {
             history.removeAt(0)
-            if (bookmarks.isNotEmpty()) {
+            if (pins.isNotEmpty()) {
                 val updated = TreeSet<Int>()
-                for (idx in bookmarks) {
+                for (idx in pins) {
                     if (idx == 0) continue
                     updated.add(idx - 1)
                 }
-                bookmarks.clear()
-                bookmarks.addAll(updated)
+                pins.clear()
+                pins.addAll(updated)
             }
             if (historyIndex > 0) {
                 historyIndex -= 1
             }
         }
         history.add(entry)
+        historyIndex = history.lastIndex
+        updateNavigationState()
+        setContextOutput(text, isError)
+    }
+
+    fun replaceLatestContextOutput(text: String, isError: Boolean) {
+        if (history.isEmpty()) {
+            pushContextOutput(text, isError)
+            return
+        }
+        val entry = ContextEntry(text, isError)
+        history[history.lastIndex] = entry
         historyIndex = history.lastIndex
         updateNavigationState()
         setContextOutput(text, isError)
@@ -138,9 +175,7 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
         prevButton.isEnabled = hasHistory && historyIndex > 0
         nextButton.isEnabled = hasHistory && historyIndex < latestIndex
         latestButton.isEnabled = hasHistory && historyIndex in 0 until latestIndex
-        bookmarkButton.isEnabled = hasHistory
         updateSliderState(hasHistory, latestIndex)
-        updateBookmarkButtonState()
 
         val behind = if (hasHistory && historyIndex >= 0) latestIndex - historyIndex else 0
         statusLabel.text = if (behind == 0) "Latest" else "$behind behind"
@@ -159,7 +194,7 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
         toolbar.addToLeft(buttons)
         val rightPanel = BorderLayoutPanel()
         rightPanel.addToLeft(statusLabel)
-        rightPanel.addToRight(bookmarkButton)
+        rightPanel.addToRight(actionToolbar.component)
         toolbar.addToRight(rightPanel)
 
         val sliderPanel = JPanel(BorderLayout())
@@ -176,7 +211,6 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
         prevButton.addActionListener { navigateTo(historyIndex - 1) }
         nextButton.addActionListener { navigateTo(historyIndex + 1) }
         latestButton.addActionListener { navigateTo(history.lastIndex) }
-        bookmarkButton.addActionListener { toggleBookmarkAtCurrent() }
 
         timelineSlider.addChangeListener(object : ChangeListener {
             override fun stateChanged(e: ChangeEvent?) {
@@ -188,7 +222,7 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
                 }
             }
         })
-        installBookmarkShortcuts()
+        installPinShortcuts()
         updateNavigationState()
 
         editor.settings.apply {
@@ -199,14 +233,7 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
             isCaretRowShown = false
         }
 
-        val bookmarkWidth = maxOf(
-            bookmarkButton.getFontMetrics(bookmarkButton.font).stringWidth("Unbookmark"),
-            bookmarkButton.getFontMetrics(bookmarkButton.font).stringWidth("Bookmark")
-        )
-        val paddedWidth = bookmarkWidth + 28
-        val preferred = bookmarkButton.preferredSize
-        bookmarkButton.preferredSize = java.awt.Dimension(paddedWidth, preferred.height)
-        bookmarkButton.minimumSize = bookmarkButton.preferredSize
+        actionToolbar.component.isOpaque = false
     }
 
     private fun updateSliderState(hasHistory: Boolean, latestIndex: Int) {
@@ -219,63 +246,62 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
             timelineSlider.majorTickSpacing = if (hasHistory) (latestIndex.coerceAtLeast(1)) else 0
             timelineSlider.paintTicks = false
             timelineSlider.paintLabels = true
-            timelineSlider.labelTable = buildBookmarkLabels(latestIndex)
+            timelineSlider.labelTable = buildPinLabels(latestIndex)
         } finally {
             sliderUpdating = false
         }
     }
 
-    private fun buildBookmarkLabels(latestIndex: Int): Hashtable<Int, JLabel> {
+    private fun buildPinLabels(latestIndex: Int): Hashtable<Int, JLabel> {
         val table = Hashtable<Int, JLabel>()
-        val emptyLabel = JLabel(" ")
+        val labelFont = statusLabel.font.deriveFont(Font.BOLD)
+        val emptyLabel = JLabel(" ").apply {
+            font = labelFont
+        }
         table[0] = emptyLabel
         if (latestIndex > 0) {
             table[latestIndex] = emptyLabel
         }
-        for (idx in bookmarks) {
+        for (idx in pins) {
             val label = JLabel("*")
-            label.font = label.font.deriveFont(Font.BOLD, 10f)
+            label.font = labelFont
             table[idx] = label
         }
         return table
     }
 
-    private fun updateBookmarkButtonState() {
-        val marked = historyIndex >= 0 && bookmarks.contains(historyIndex)
-        bookmarkButton.text = if (marked) "Unbookmark" else "Bookmark"
-    }
-
-    private fun toggleBookmarkAtCurrent() {
+    private fun togglePinAtCurrent() {
         if (historyIndex < 0) return
-        if (!bookmarks.add(historyIndex)) {
-            bookmarks.remove(historyIndex)
+        if (!pins.add(historyIndex)) {
+            pins.remove(historyIndex)
         }
         updateNavigationState()
+        actionToolbar.updateActionsAsync()
     }
 
-    private fun installBookmarkShortcuts() {
+    private fun installPinShortcuts() {
         val inputMap = rootPanel.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
         val actionMap = rootPanel.actionMap
 
-        inputMap.put(KeyStroke.getKeyStroke("ctrl M"), "pwndbg.bookmark.toggle")
-        inputMap.put(KeyStroke.getKeyStroke("alt UP"), "pwndbg.bookmark.prev")
-        inputMap.put(KeyStroke.getKeyStroke("alt DOWN"), "pwndbg.bookmark.next")
+        inputMap.put(KeyStroke.getKeyStroke("ctrl M"), "pwndbg.pin.toggle")
+        inputMap.put(KeyStroke.getKeyStroke("alt UP"), "pwndbg.pin.prev")
+        inputMap.put(KeyStroke.getKeyStroke("alt DOWN"), "pwndbg.pin.next")
         inputMap.put(KeyStroke.getKeyStroke("LEFT"), "pwndbg.context.prev")
         inputMap.put(KeyStroke.getKeyStroke("RIGHT"), "pwndbg.context.next")
 
-        actionMap.put("pwndbg.bookmark.toggle", object : AbstractAction() {
+        actionMap.put("pwndbg.pin.toggle", object : AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
-                toggleBookmarkAtCurrent()
+                togglePinAtCurrent()
             }
         })
-        actionMap.put("pwndbg.bookmark.prev", object : AbstractAction() {
+        actionMap.put("pwndbg.pin.prev", object : AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
-                jumpBookmark(-1)
+                jumpPin(-1)
             }
         })
-        actionMap.put("pwndbg.bookmark.next", object : AbstractAction() {
+        actionMap.put("pwndbg.pin.next", object : AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
-                jumpBookmark(1)
+                jumpPin(1)
             }
         })
         actionMap.put("pwndbg.context.prev", object : AbstractAction() {
@@ -290,8 +316,8 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
         })
     }
 
-    private fun jumpBookmark(direction: Int) {
-        if (bookmarks.isEmpty()) {
+    private fun jumpPin(direction: Int) {
+        if (pins.isEmpty()) {
             if (history.isNotEmpty()) {
                 navigateTo(history.lastIndex)
             }
@@ -299,10 +325,35 @@ class PwndbgContextPanel(project: com.intellij.openapi.project.Project) : Dispos
         }
         val current = historyIndex
         val target = if (direction > 0) {
-            bookmarks.higher(current)?.takeIf { it >= 0 } ?: history.lastIndex
+            pins.higher(current)?.takeIf { it >= 0 } ?: history.lastIndex
         } else {
-            bookmarks.lower(current)?.takeIf { it >= 0 } ?: history.lastIndex
+            pins.lower(current)?.takeIf { it >= 0 } ?: history.lastIndex
         }
         navigateTo(target)
+    }
+
+    private fun refreshContext() {
+        project.getService(PwndbgService::class.java)
+            .executeCommandCapture("context") { result, error ->
+                ApplicationManager.getApplication().invokeLater {
+                    if (!error.isNullOrBlank()) {
+                        setContextOutput("Pwndbg context refresh failed: $error\n", isError = true)
+                        return@invokeLater
+                    }
+                    if (!result.isNullOrBlank()) {
+                        replaceLatestContextOutput(result + "\n", isError = false)
+                    }
+                }
+            }
+    }
+
+    private fun createActionToolbar(): com.intellij.openapi.actionSystem.ActionToolbar {
+        val group = DefaultActionGroup()
+        group.add(pinAction)
+        group.add(refreshAction)
+        val toolbar = ActionManager.getInstance().createActionToolbar("PwndbgContextActions", group, true)
+        (toolbar as? ActionToolbarImpl)?.setReservePlaceAutoPopupIcon(false)
+        toolbar.targetComponent = rootPanel
+        return toolbar
     }
 }
