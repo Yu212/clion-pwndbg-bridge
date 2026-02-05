@@ -1,19 +1,23 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.panels
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
+import com.yu212.pwndbg.ui.CollapsibleSection
+import com.yu212.pwndbg.ui.CommandHistoryField
+import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
 import javax.swing.*
 
-class PwndbgAddressPanel(private val project: Project) : Disposable {
+class PwndbgAddressPanel(private val project: Project) : PwndbgTabPanel {
+    override val id: String = "address"
+    override val title: String = "Address"
     private val addressField = CommandHistoryField()
     private val xFormatField = CommandHistoryField("16gx")
     private val runButton = JButton("Inspect")
@@ -66,7 +70,7 @@ class PwndbgAddressPanel(private val project: Project) : Disposable {
         updateTelescopeTitle()
     }
 
-    val component: JComponent
+    override val component: JComponent
         get() = rootPanel
 
     private fun inspectAddress() {

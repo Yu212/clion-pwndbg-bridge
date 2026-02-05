@@ -1,28 +1,26 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.panels
 
 import com.intellij.execution.impl.ConsoleViewImpl
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
+import com.yu212.pwndbg.ui.CommandHistoryField
+import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.GridLayout
-import javax.swing.JButton
-import javax.swing.JComponent
-import javax.swing.JPanel
-import javax.swing.KeyStroke
-import javax.swing.AbstractAction
 import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
+import javax.swing.*
 
-class PwndbgPanel(private val project: Project) : Disposable {
+class PwndbgCommandPanel(private val project: Project) : PwndbgTabPanel {
+    override val id: String = "command"
+    override val title: String = "Command"
     private val consoleView: ConsoleView = ConsoleViewImpl(project, true)
     private val ansiDecoder = AnsiEscapeDecoder()
     private val inputField = CommandHistoryField()
@@ -65,7 +63,7 @@ class PwndbgPanel(private val project: Project) : Disposable {
         })
     }
 
-    val component: JComponent
+    override val component: JComponent
         get() = rootPanel
 
     fun clearOutput() {
@@ -82,10 +80,6 @@ class PwndbgPanel(private val project: Project) : Disposable {
             val type = ConsoleViewContentType.getConsoleViewType(attrs)
             consoleView.print(chunk, type)
         }
-    }
-
-    fun registerDisposable(parent: Disposable) {
-        Disposer.register(parent, this)
     }
 
     override fun dispose() {

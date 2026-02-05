@@ -1,7 +1,6 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.panels
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -11,13 +10,17 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
+import com.yu212.pwndbg.ui.CollapsibleSection
+import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 
-class PwndbgMapsPanel(private val project: Project) : Disposable {
+class PwndbgMapsPanel(private val project: Project) : PwndbgTabPanel {
+    override val id: String = "maps"
+    override val title: String = "Maps"
     private val vmmapView = CollapsibleSection("vmmap", project)
     private val checksecView = CollapsibleSection("checksec", project)
     private val gotView = CollapsibleSection("got", project)
@@ -48,7 +51,7 @@ class PwndbgMapsPanel(private val project: Project) : Disposable {
         actionToolbar.component.isOpaque = false
     }
 
-    val component: JComponent
+    override val component: JComponent
         get() = rootPanel
 
     fun refreshAll() {

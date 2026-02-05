@@ -1,7 +1,6 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.panels
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
@@ -12,6 +11,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.breakpoints.*
 import com.yu212.pwndbg.PwndbgService
+import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Font
@@ -19,7 +19,9 @@ import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import javax.swing.*
 
-class PwndbgBreakpointsPanel(private val project: Project) : Disposable {
+class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
+    override val id: String = "breakpoints"
+    override val title: String = "Breakpoints"
     private val model = DefaultListModel<BreakpointEntry>()
     private val list = object : JBList<BreakpointEntry>(model) {
         override fun processMouseEvent(e: MouseEvent) {
@@ -83,7 +85,7 @@ class PwndbgBreakpointsPanel(private val project: Project) : Disposable {
         refreshAll()
     }
 
-    val component: JComponent
+    override val component: JComponent
         get() = rootPanel
 
     private fun installBreakpointListener() {

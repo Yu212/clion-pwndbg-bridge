@@ -12,10 +12,14 @@
     </dependencies>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow id="Pwndbg"
-                    anchor="right"
-                    factoryClass="com.yu212.pwndbg.ui.PwndbgToolWindowFactory"/>
-
         <postStartupActivity implementation="com.yu212.pwndbg.PwndbgStartupActivity"/>
     </extensions>
+
+    <actions>
+        <group id="PwndbgTabMoveGroup"
+               class="com.yu212.pwndbg.ui.PwndbgMoveTabActionGroup"
+               popup="true">
+            <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
+        </group>
+    </actions>
 </idea-plugin>

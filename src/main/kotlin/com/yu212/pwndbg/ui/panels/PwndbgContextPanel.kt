@@ -1,10 +1,9 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.panels
 
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -17,6 +16,7 @@ import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
+import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Font
 import java.util.*
@@ -24,7 +24,9 @@ import javax.swing.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 
-class PwndbgContextPanel(private val project: Project) : Disposable {
+class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
+    override val id: String = "context"
+    override val title: String = "Context"
     private data class ContextEntry(
         val text: String,
         val isError: Boolean
@@ -65,7 +67,7 @@ class PwndbgContextPanel(private val project: Project) : Disposable {
     private val pins = TreeSet<Int>()
     private var sliderUpdating = false
 
-    val component: JComponent
+    override val component: JComponent
         get() = rootPanel
 
     fun clearOutput() {

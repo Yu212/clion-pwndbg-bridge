@@ -14,24 +14,21 @@ import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebugSessionListener
 import com.jetbrains.cidr.execution.debugger.CidrDebugProcess
 import com.jetbrains.cidr.execution.debugger.backend.dap.DapDriver
-import com.yu212.pwndbg.ui.PwndbgContextPanel
-import com.yu212.pwndbg.ui.PwndbgPanel
+import com.yu212.pwndbg.ui.PwndbgToolWindowManager
 import org.eclipse.lsp4j.debug.EvaluateArguments
 
 class CidrSessionBridge(
-    private val xDebugSession: XDebugSession,
-    private val debugProcess: CidrDebugProcess,
-    private val panelProvider: () -> PwndbgPanel?,
-    private val contextPanelProvider: () -> PwndbgContextPanel?
+    private val debugProcess: CidrDebugProcess
 ) : Disposable {
     private val log = Logger.getInstance(CidrSessionBridge::class.java)
+    private val xDebugSession: XDebugSession = debugProcess.session
 
     private val outputListener = object : ProcessAdapter() {
         override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
-            val panel = panelProvider() ?: return
             val isError = outputType === ProcessOutputTypes.STDERR || outputType === ProcessOutputTypes.SYSTEM
             ApplicationManager.getApplication().invokeLater {
-                panel.printOutput(event.text, isError)
+                val commandPanel = toolWindowManager.commandPanel
+                commandPanel?.printOutput(event.text, isError)
             }
         }
     }
@@ -39,7 +36,7 @@ class CidrSessionBridge(
     private var consoleOffset = 0
     private val consoleListener = object : DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
-            val panel = panelProvider() ?: return
+            val commandPanel = toolWindowManager.commandPanel
             val doc = event.document
             val length = doc.textLength
             if (length <= consoleOffset) return
@@ -47,7 +44,7 @@ class CidrSessionBridge(
             consoleOffset = length
             if (text.isNotEmpty()) {
                 ApplicationManager.getApplication().invokeLater {
-                    panel.printOutput(text, isError = false)
+                    commandPanel?.printOutput(text, isError = false)
                 }
             }
         }
@@ -55,26 +52,28 @@ class CidrSessionBridge(
 
     private val sessionListener = object : XDebugSessionListener {
         override fun sessionPaused() {
+            val manager = toolWindowManager
+            val commandPanel = manager.commandPanel
+            val contextPanel = manager.contextPanel
             log.debug("Pwndbg: session paused, refreshing context.")
             runCommandCapture("context") { result, error ->
                 if (!error.isNullOrBlank()) {
-                    panelProvider()?.let { panel ->
-                        ApplicationManager.getApplication().invokeLater {
-                            panel.printOutput("Pwndbg command failed: $error\n", isError = true)
-                        }
+                    ApplicationManager.getApplication().invokeLater {
+                        commandPanel?.printOutput("Pwndbg command failed: $error\n", isError = true)
                     }
                     return@runCommandCapture
                 }
                 if (!result.isNullOrBlank()) {
-                    contextPanelProvider()?.let { targetPanel ->
-                        ApplicationManager.getApplication().invokeLater {
-                            targetPanel.pushContextOutput(result + "\n", isError = false)
-                        }
+                    ApplicationManager.getApplication().invokeLater {
+                        contextPanel?.pushContextOutput(result + "\n", isError = false)
                     }
                 }
             }
         }
     }
+
+    private val toolWindowManager: PwndbgToolWindowManager
+        get() = xDebugSession.project.getService(PwndbgToolWindowManager::class.java)
 
     init {
         xDebugSession.addSessionListener(sessionListener, this)
@@ -87,24 +86,16 @@ class CidrSessionBridge(
         }
     }
 
-    fun attachPanel(panel: PwndbgPanel) {
-        ApplicationManager.getApplication().invokeLater {
-            panel.printOutput("[pwndbg] attached to debug session: ${xDebugSession.sessionName}\n", isError = false)
-        }
-    }
-
     fun runCommand(command: String) {
+        val commandPanel = toolWindowManager.commandPanel
         val trimmed = command.trim()
 
-        val panel = panelProvider()
-        if (panel != null) {
-            ApplicationManager.getApplication().invokeLater {
-                panel.printCommand(command)
-            }
+        ApplicationManager.getApplication().invokeLater {
+            commandPanel?.printCommand(command)
         }
         if (trimmed == "exit" || trimmed == "quit") {
             ApplicationManager.getApplication().invokeLater {
-                panelProvider()?.printOutput("[pwndbg] Exiting debug session...\n", isError = false)
+                commandPanel?.printOutput("[pwndbg] Exiting debug session...\n", isError = false)
                 xDebugSession.stop()
             }
             return
@@ -112,10 +103,8 @@ class CidrSessionBridge(
         val driver = debugProcess.driverInTests
         if (driver !is DapDriver) {
             log.warn("Pwndbg: DAP driver is not available for this debug session.")
-            panelProvider()?.let { panel ->
-                ApplicationManager.getApplication().invokeLater {
-                    panel.printOutput("[pwndbg] This plugin requires DAP (Pwndbg GDB (DAP)).\n", isError = true)
-                }
+            ApplicationManager.getApplication().invokeLater {
+                commandPanel?.printOutput("[pwndbg] This plugin requires DAP (Pwndbg GDB (DAP)).\n", isError = true)
             }
             return
         }
@@ -128,20 +117,16 @@ class CidrSessionBridge(
         future.whenComplete { response, err ->
             if (err != null) {
                 log.warn("Pwndbg DAP evaluate failed", err)
-                panelProvider()?.let { panel ->
-                    ApplicationManager.getApplication().invokeLater {
-                        panel.printOutput("Pwndbg command failed: ${err.message}\n", isError = true)
-                    }
+                ApplicationManager.getApplication().invokeLater {
+                    commandPanel?.printOutput("Pwndbg command failed: ${err.message}\n", isError = true)
                 }
                 return@whenComplete
             }
 
             val result = response?.result
             if (!result.isNullOrBlank()) {
-                panelProvider()?.let { targetPanel ->
-                    ApplicationManager.getApplication().invokeLater {
-                        targetPanel.printOutput(result + "\n", isError = false)
-                    }
+                ApplicationManager.getApplication().invokeLater {
+                    commandPanel?.printOutput(result + "\n", isError = false)
                 }
             }
         }
