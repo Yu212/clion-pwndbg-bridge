@@ -79,8 +79,6 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
 
         sourceToolWindow.contentManager.removeContent(content, false)
         destinationToolWindow.contentManager.addContent(content)
-        destinationToolWindow.contentManager.setSelectedContent(content)
-        destinationToolWindow.show()
         getTabTitle(tabId)?.let { title ->
             content.displayName = title
             content.tabName = title

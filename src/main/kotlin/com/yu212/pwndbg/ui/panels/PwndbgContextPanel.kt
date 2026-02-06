@@ -31,7 +31,6 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
 
     private val viewer = AnsiTextViewer(
         project,
-        adjustHeight = true,
         verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
     )
     private var lastText: String? = null
