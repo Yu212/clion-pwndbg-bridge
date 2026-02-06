@@ -41,6 +41,8 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
         private set
     var mapsPanel: PwndbgMapsPanel? = null
         private set
+    var heapPanel: PwndbgHeapPanel? = null
+        private set
 
     private var panelsList: List<PwndbgTabPanel> = emptyList()
     private var panelsById: Map<String, PwndbgTabPanel> = emptyMap()
@@ -233,7 +235,8 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
             PwndbgContextPanel(project).also { contextPanel = it },
             PwndbgBreakpointsPanel(project).also { breakpointsPanel = it },
             PwndbgAddressPanel(project).also { addressPanel = it },
-            PwndbgMapsPanel(project).also { mapsPanel = it }
+            PwndbgMapsPanel(project).also { mapsPanel = it },
+            PwndbgHeapPanel(project).also { heapPanel = it }
         )
         panelsById = panelsList.associateBy { it.id }
         panelsList.forEach { Disposer.register(this, it) }

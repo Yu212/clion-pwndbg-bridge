@@ -6,15 +6,14 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
-import com.yu212.pwndbg.PwndbgService
 import com.yu212.pwndbg.ui.AnsiTextViewer
+import com.yu212.pwndbg.ui.PwndbgContextHistoryManager
 import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Font
-import java.util.*
+import java.util.Hashtable
 import javax.swing.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
@@ -24,19 +23,13 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
     override val title: String = "Context"
     override val supportsTextFontSize: Boolean = true
 
-    private data class ContextEntry(
-        val text: String,
-        val isError: Boolean
-    )
-
     private val viewer = AnsiTextViewer(
         project,
         verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
     )
     private var lastText: String? = null
-    private val history = ArrayList<ContextEntry>()
-    private val maxHistory = 1000
-    private var historyIndex = -1
+    private val historyManager: PwndbgContextHistoryManager
+        get() = project.getService(PwndbgContextHistoryManager::class.java)
 
     private val prevButton = JButton("<")
     private val nextButton = JButton(">")
@@ -44,7 +37,9 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
     private val statusLabel = JLabel("Latest")
     private val refreshAction = object: AnAction("Refresh Context", "Refresh context", AllIcons.Actions.Refresh) {
         override fun actionPerformed(e: AnActionEvent) {
-            refreshContext()
+            historyManager.refresh { entry ->
+                historyManager.replaceLatestEntry(entry)
+            }
         }
     }
     private val pinAction = object: AnAction("Add Pin", "Add pin", AllIcons.General.Pin) {
@@ -53,8 +48,9 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
         }
 
         override fun update(e: AnActionEvent) {
-            val marked = historyIndex >= 0 && pins.contains(historyIndex)
-            e.presentation.isEnabled = history.isNotEmpty()
+            val currentIndex = historyManager.getCurrentIndex()
+            val marked = currentIndex != null && historyManager.isPinned(currentIndex)
+            e.presentation.isEnabled = historyManager.hasHistory()
             e.presentation.icon = if (marked) AllIcons.General.PinSelected else AllIcons.General.Pin
             e.presentation.text = if (marked) "Remove Pin" else "Add Pin"
         }
@@ -62,7 +58,6 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
     private val timelineSlider = JSlider()
     private val rootPanel = BorderLayoutPanel()
     private val actionToolbar = createActionToolbar()
-    private val pins = TreeSet<Int>()
     private var sliderUpdating = false
 
     override val component: JComponent
@@ -74,81 +69,37 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
         rootPanel.repaint()
     }
 
-    fun clearOutput() {
-        history.clear()
-        pins.clear()
-        historyIndex = -1
-        updateNavigationState()
-        setContextOutput("", isError = false)
-    }
-
-    fun setContextOutput(text: String, isError: Boolean) {
+    fun setContextText(text: String, isError: Boolean) {
         if (text == lastText) return
         lastText = text
         viewer.setText(text, isError, preserveView = true)
     }
 
-    fun pushContextOutput(text: String, isError: Boolean) {
-        val entry = ContextEntry(text, isError)
-        val lastEntry = history.lastOrNull()
-        if (lastEntry == entry) {
-            historyIndex = history.lastIndex
-            updateNavigationState()
-            setContextOutput(text, isError)
-            return
-        }
-
-        if (history.size >= maxHistory) {
-            history.removeAt(0)
-            if (pins.isNotEmpty()) {
-                val updated = TreeSet<Int>()
-                for (idx in pins) {
-                    if (idx == 0) continue
-                    updated.add(idx - 1)
-                }
-                pins.clear()
-                pins.addAll(updated)
-            }
-            if (historyIndex > 0) {
-                historyIndex -= 1
-            }
-        }
-        history.add(entry)
-        historyIndex = history.lastIndex
-        updateNavigationState()
-        setContextOutput(text, isError)
-    }
-
-    fun replaceLatestContextOutput(text: String, isError: Boolean) {
-        if (history.isEmpty()) {
-            pushContextOutput(text, isError)
-            return
-        }
-        val entry = ContextEntry(text, isError)
-        history[history.lastIndex] = entry
-        historyIndex = history.lastIndex
-        updateNavigationState()
-        setContextOutput(text, isError)
-    }
-
     private fun navigateTo(index: Int) {
-        if (index < 0 || index >= history.size) return
-        historyIndex = index
-        val entry = history[historyIndex]
-        updateNavigationState()
-        setContextOutput(entry.text, entry.isError)
+        historyManager.showIndex(index)
     }
 
     private fun updateNavigationState() {
-        val latestIndex = history.lastIndex
-        val hasHistory = history.isNotEmpty()
-        prevButton.isEnabled = hasHistory && historyIndex > 0
-        nextButton.isEnabled = hasHistory && historyIndex < latestIndex
-        latestButton.isEnabled = hasHistory && historyIndex in 0 until latestIndex
-        updateSliderState(hasHistory, latestIndex)
+        if (!historyManager.hasHistory()) {
+            prevButton.isEnabled = false
+            nextButton.isEnabled = false
+            latestButton.isEnabled = false
+            updateSliderState()
+            statusLabel.text = "No history"
+        } else {
+            val currentIndex = historyManager.getCurrentIndex()!!
+            val latestIndex = historyManager.getLatestIndex()!!
+            val earliestIndex = historyManager.getEarliestIndex()!!
 
-        val behind = if (hasHistory && historyIndex >= 0) latestIndex - historyIndex else 0
-        statusLabel.text = if (behind == 0) "Latest" else "$behind behind"
+            prevButton.isEnabled = currentIndex > earliestIndex
+            nextButton.isEnabled = currentIndex < latestIndex
+            latestButton.isEnabled = currentIndex < latestIndex
+            updateSliderState()
+
+            val behind = latestIndex - currentIndex
+            val ordinal = currentIndex + 1
+            statusLabel.text = if (behind == 0) "Latest (#$ordinal)" else "$behind behind (#$ordinal)"
+        }
     }
 
     override fun dispose() {
@@ -178,16 +129,26 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
         rootPanel.add(topPanel, BorderLayout.NORTH)
         rootPanel.add(viewer.component, BorderLayout.CENTER)
 
-        prevButton.addActionListener { navigateTo(historyIndex - 1) }
-        nextButton.addActionListener { navigateTo(historyIndex + 1) }
-        latestButton.addActionListener { navigateTo(history.lastIndex) }
+        prevButton.addActionListener {
+            val current = historyManager.getCurrentIndex() ?: return@addActionListener
+            navigateTo(current - 1)
+        }
+        nextButton.addActionListener {
+            val current = historyManager.getCurrentIndex() ?: return@addActionListener
+            navigateTo(current + 1)
+        }
+        latestButton.addActionListener {
+            val latest = historyManager.getLatestIndex() ?: return@addActionListener
+            navigateTo(latest)
+        }
 
         timelineSlider.addChangeListener(object: ChangeListener {
             override fun stateChanged(e: ChangeEvent?) {
                 if (sliderUpdating) return
                 if (!timelineSlider.isEnabled) return
                 val target = timelineSlider.value
-                if (target != historyIndex) {
+                val current = historyManager.getCurrentIndex()
+                if (current == null || target != current) {
                     navigateTo(target)
                 }
             }
@@ -198,47 +159,42 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
         actionToolbar.component.isOpaque = false
     }
 
-    private fun updateSliderState(hasHistory: Boolean, latestIndex: Int) {
+    private fun updateSliderState() {
         sliderUpdating = true
         try {
-            timelineSlider.isEnabled = hasHistory
-            timelineSlider.minimum = 0
-            timelineSlider.maximum = if (hasHistory) latestIndex else 0
-            timelineSlider.value = if (hasHistory && historyIndex >= 0) historyIndex else 0
-            timelineSlider.majorTickSpacing = if (hasHistory) (latestIndex.coerceAtLeast(1)) else 0
+            val currentIndex = historyManager.getCurrentIndex()
+            val latestIndex = historyManager.getLatestIndex()
+            val earliestIndex = historyManager.getEarliestIndex()
+
+            timelineSlider.isEnabled = historyManager.hasHistory()
+            timelineSlider.minimum = earliestIndex ?: 0
+            timelineSlider.maximum = latestIndex ?: 0
+            timelineSlider.value = currentIndex ?: 0
+            timelineSlider.majorTickSpacing = latestIndex?.coerceAtLeast(1) ?: 0
             timelineSlider.paintTicks = false
             timelineSlider.paintLabels = true
-            timelineSlider.labelTable = buildPinLabels(latestIndex)
+
+            val table = Hashtable<Int, JLabel>()
+            val labelFont = statusLabel.font.deriveFont(Font.BOLD)
+            val emptyLabel = JLabel(" ").apply {
+                font = labelFont
+            }
+            table[earliestIndex ?: 0] = emptyLabel
+            for (idx in historyManager.getPins()) {
+                table[idx] = JLabel("*").apply {
+                    font = labelFont
+                }
+            }
+            timelineSlider.labelTable = table
         } finally {
             sliderUpdating = false
         }
     }
 
-    private fun buildPinLabels(latestIndex: Int): Hashtable<Int, JLabel> {
-        val table = Hashtable<Int, JLabel>()
-        val labelFont = statusLabel.font.deriveFont(Font.BOLD)
-        val emptyLabel = JLabel(" ").apply {
-            font = labelFont
-        }
-        table[0] = emptyLabel
-        if (latestIndex > 0) {
-            table[latestIndex] = emptyLabel
-        }
-        for (idx in pins) {
-            val label = JLabel("*")
-            label.font = labelFont
-            table[idx] = label
-        }
-        return table
-    }
-
     private fun togglePinAtCurrent() {
-        if (historyIndex < 0) return
-        if (!pins.add(historyIndex)) {
-            pins.remove(historyIndex)
-        }
-        updateNavigationState()
-        actionToolbar.updateActionsAsync()
+        val currentIndex = historyManager.getCurrentIndex() ?: return
+        historyManager.togglePin(currentIndex)
+        updateHistoryState()
     }
 
     private fun installPinShortcuts() {
@@ -258,55 +214,26 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
         })
         actionMap.put("pwndbg.pin.prev", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
-                jumpPin(-1)
+                historyManager.jumpPin(-1)
             }
         })
         actionMap.put("pwndbg.pin.next", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
-                jumpPin(1)
+                historyManager.jumpPin(1)
             }
         })
         actionMap.put("pwndbg.context.prev", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
-                navigateTo(historyIndex - 1)
+                val current = historyManager.getCurrentIndex() ?: return
+                navigateTo(current - 1)
             }
         })
         actionMap.put("pwndbg.context.next", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
-                navigateTo(historyIndex + 1)
+                val current = historyManager.getCurrentIndex() ?: return
+                navigateTo(current + 1)
             }
         })
-    }
-
-    private fun jumpPin(direction: Int) {
-        if (pins.isEmpty()) {
-            if (history.isNotEmpty()) {
-                navigateTo(history.lastIndex)
-            }
-            return
-        }
-        val current = historyIndex
-        val target = if (direction > 0) {
-            pins.higher(current)?.takeIf { it >= 0 } ?: history.lastIndex
-        } else {
-            pins.lower(current)?.takeIf { it >= 0 } ?: history.lastIndex
-        }
-        navigateTo(target)
-    }
-
-    private fun refreshContext() {
-        project.getService(PwndbgService::class.java)
-                .executeCommandCapture("context") { result, error ->
-                    ApplicationManager.getApplication().invokeLater {
-                        if (!error.isNullOrBlank()) {
-                            setContextOutput("Pwndbg context refresh failed: $error\n", isError = true)
-                            return@invokeLater
-                        }
-                        if (!result.isNullOrBlank()) {
-                            replaceLatestContextOutput(result + "\n", isError = false)
-                        }
-                    }
-                }
     }
 
     private fun createActionToolbar(): com.intellij.openapi.actionSystem.ActionToolbar {
@@ -317,5 +244,10 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
         (toolbar as? ActionToolbarImpl)?.setReservePlaceAutoPopupIcon(false)
         toolbar.targetComponent = rootPanel
         return toolbar
+    }
+
+    fun updateHistoryState() {
+        updateNavigationState()
+        actionToolbar.updateActionsAsync()
     }
 }

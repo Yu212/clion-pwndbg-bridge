@@ -43,7 +43,6 @@ class PwndbgService(private val project: Project): Disposable {
             override fun processStarted(debugProcess: XDebugProcess) {
                 val manager = toolWindowManager
                 val commandPanel = manager.commandPanel
-                val contextPanel = manager.contextPanel
                 startSocat()
                 val bridge = createBridge(debugProcess) ?: run {
                     val className = debugProcess.javaClass.name
@@ -57,7 +56,7 @@ class PwndbgService(private val project: Project): Disposable {
                 currentBridge?.dispose()
                 currentBridge = bridge
                 commandPanel?.clearOutput()
-                contextPanel?.clearOutput()
+                project.getService(com.yu212.pwndbg.ui.PwndbgContextHistoryManager::class.java).clearHistory()
                 ApplicationManager.getApplication().invokeLater {
                     manager.showPrimaryWindow()
                 }

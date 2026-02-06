@@ -52,22 +52,11 @@ class CidrSessionBridge(
 
     private val sessionListener = object: XDebugSessionListener {
         override fun sessionPaused() {
-            val manager = toolWindowManager
-            val commandPanel = manager.commandPanel
-            val contextPanel = manager.contextPanel
             log.debug("Pwndbg: session paused, refreshing context.")
-            runCommandCapture("context") { result, error ->
-                if (!error.isNullOrBlank()) {
-                    ApplicationManager.getApplication().invokeLater {
-                        commandPanel?.printOutput("Pwndbg command failed: $error\n", isError = true)
-                    }
-                    return@runCommandCapture
-                }
-                if (!result.isNullOrBlank()) {
-                    ApplicationManager.getApplication().invokeLater {
-                        contextPanel?.pushContextOutput(result + "\n", isError = false)
-                    }
-                }
+            val historyManager = xDebugSession.project
+                    .getService(com.yu212.pwndbg.ui.PwndbgContextHistoryManager::class.java)
+            historyManager.refresh { entry ->
+                historyManager.pushEntry(entry)
             }
         }
     }
