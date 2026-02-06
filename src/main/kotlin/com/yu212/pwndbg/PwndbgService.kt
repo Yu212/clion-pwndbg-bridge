@@ -34,10 +34,6 @@ class PwndbgService(private val project: Project) : Disposable {
     private val toolWindowManager: PwndbgToolWindowManager
         get() = project.getService(PwndbgToolWindowManager::class.java)
 
-    fun commandPanel() = toolWindowManager.commandPanel
-
-    fun contextPanel() = toolWindowManager.contextPanel
-
     fun init() {
         if (initialized) return
         initialized = true
@@ -48,8 +44,6 @@ class PwndbgService(private val project: Project) : Disposable {
                 val manager = toolWindowManager
                 val commandPanel = manager.commandPanel
                 val contextPanel = manager.contextPanel
-                val mapsPanel = manager.mapsPanel
-                val breakpointsPanel = manager.breakpointsPanel
                 startSocat()
                 val bridge = createBridge(debugProcess) ?: run {
                     val className = debugProcess.javaClass.name
@@ -67,8 +61,6 @@ class PwndbgService(private val project: Project) : Disposable {
                 ApplicationManager.getApplication().invokeLater {
                     manager.showPrimaryWindow()
                 }
-                mapsPanel?.refreshAll()
-                breakpointsPanel?.refreshAll()
             }
 
             override fun processStopped(debugProcess: XDebugProcess) {
