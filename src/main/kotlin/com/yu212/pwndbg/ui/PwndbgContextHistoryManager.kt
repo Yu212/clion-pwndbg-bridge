@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.yu212.pwndbg.PwndbgService
+import com.yu212.pwndbg.settings.PwndbgSettingsService
 import java.util.TreeSet
 
 @Service(Service.Level.PROJECT)
@@ -16,7 +17,6 @@ class PwndbgContextHistoryManager(private val project: Project) {
     )
 
     private val history = ArrayList<HistoryEntry>()
-    private val maxHistory = 1000
     private var droppedCount = 0
     private var currentIndex: Int? = null
     private val pins = TreeSet<Int>()
@@ -103,7 +103,10 @@ class PwndbgContextHistoryManager(private val project: Project) {
     }
 
     fun pushEntry(entry: HistoryEntry) {
-        if (history.size >= maxHistory) {
+        val maxHistory = ApplicationManager.getApplication()
+                .getService(PwndbgSettingsService::class.java)
+                .getContextHistoryMax()
+        while (history.size >= maxHistory) {
             history.removeAt(0)
             droppedCount += 1
         }

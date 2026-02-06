@@ -1,7 +1,9 @@
 package com.yu212.pwndbg.ui
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.components.JBTextField
+import com.yu212.pwndbg.settings.PwndbgSettingsService
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import javax.swing.AbstractAction
@@ -9,18 +11,16 @@ import javax.swing.KeyStroke
 
 class CommandHistoryField(
     initialText: String = "",
-    private val maxHistory: Int = 1000
 ): JBTextField(initialText) {
     private data class HistoryEntry(val index: Int, val text: String) {
         override fun toString(): String = text
     }
 
-    private val history = ArrayList<String>(maxHistory)
+    private val history = mutableListOf<String>()
     private var historyIndex = 0
     private var pendingText: String? = null
 
     init {
-        historyIndex = history.size
         installHistoryBindings()
     }
 
@@ -32,14 +32,13 @@ class CommandHistoryField(
             return
         }
         history.add(trimmed)
-        if (history.size > maxHistory) {
-            history.removeAt(0)
-        }
+        trimToMax()
         resetNavigation()
     }
 
     fun showHistoryPopup() {
         if (history.isEmpty()) return
+        trimToMax()
         val items = history.indices.reversed().map { HistoryEntry(it, history[it]) }
         val popup = JBPopupFactory.getInstance()
                 .createPopupChooserBuilder(items)
@@ -98,5 +97,14 @@ class CommandHistoryField(
     private fun resetNavigation() {
         historyIndex = history.size
         pendingText = null
+    }
+
+    private fun trimToMax() {
+        val maxHistory = ApplicationManager.getApplication()
+                .getService(PwndbgSettingsService::class.java)
+                .getContextHistoryMax()
+        while (history.size > maxHistory) {
+            history.removeAt(0)
+        }
     }
 }

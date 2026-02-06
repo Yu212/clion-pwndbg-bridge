@@ -13,6 +13,10 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.yu212.pwndbg.PwndbgStartupActivity"/>
+        <applicationConfigurable
+                displayName="Pwndbg Bridge"
+                id="com.yu212.pwndbg.settings"
+                implementation="com.yu212.pwndbg.settings.PwndbgSettingsConfigurable"/>
     </extensions>
 
     <actions>
