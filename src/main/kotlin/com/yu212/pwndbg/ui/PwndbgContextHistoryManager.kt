@@ -13,7 +13,13 @@ class PwndbgContextHistoryManager(private val project: Project) {
         val contextText: String,
         val contextError: Boolean,
         val heapText: String,
-        val heapError: Boolean
+        val heapError: Boolean,
+        val arenasText: String,
+        val arenasError: Boolean,
+        val heapInfoText: String,
+        val heapInfoError: Boolean,
+        val binsText: String,
+        val binsError: Boolean
     )
 
     private val history = ArrayList<HistoryEntry>()
@@ -77,7 +83,32 @@ class PwndbgContextHistoryManager(private val project: Project) {
             service.executeCommandCapture("vis-heap-chunks") { heapResult, heapError ->
                 val heapIsError = heapResult.isNullOrBlank() || !heapError.isNullOrBlank()
                 val heapText = if (!heapIsError) heapResult else "vis-heap-chunks command failed: $heapError\n"
-                callback(HistoryEntry(contextText, contextIsError, heapText, heapIsError))
+                service.executeCommandCapture("arenas") { arenasResult, arenasError ->
+                    val arenasIsError = arenasResult.isNullOrBlank() || !arenasError.isNullOrBlank()
+                    val arenasText = if (!arenasIsError) arenasResult else "arenas command failed: $arenasError\n"
+                    service.executeCommandCapture("heap") { heapInfoResult, heapInfoError ->
+                        val heapInfoIsError = heapInfoResult.isNullOrBlank() || !heapInfoError.isNullOrBlank()
+                        val heapInfoText = if (!heapInfoIsError) heapInfoResult else "heap command failed: $heapInfoError\n"
+                        service.executeCommandCapture("bins") { binsResult, binsError ->
+                            val binsIsError = binsResult.isNullOrBlank() || !binsError.isNullOrBlank()
+                            val binsText = if (!binsIsError) binsResult else "bins command failed: $binsError\n"
+                            callback(
+                                HistoryEntry(
+                                    contextText,
+                                    contextIsError,
+                                    heapText,
+                                    heapIsError,
+                                    arenasText,
+                                    arenasIsError,
+                                    heapInfoText,
+                                    heapInfoIsError,
+                                    binsText,
+                                    binsIsError
+                                )
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -119,13 +150,20 @@ class PwndbgContextHistoryManager(private val project: Project) {
         ApplicationManager.getApplication().invokeLater {
             val contextPanel = toolWindowManager.contextPanel
             val heapPanel = toolWindowManager.heapPanel
+            val heapInfoPanel = toolWindowManager.heapInfoPanel
             if (currentIndex == null) {
                 contextPanel?.setContextText("", isError = false)
                 heapPanel?.setHeapText("", isError = false)
+                heapInfoPanel?.setArenasText("", isError = false)
+                heapInfoPanel?.setHeapText("", isError = false)
+                heapInfoPanel?.setBinsText("", isError = false)
             } else {
                 val entry = history[currentIndex!! - droppedCount]
                 contextPanel?.setContextText(entry.contextText, entry.contextError)
                 heapPanel?.setHeapText(entry.heapText, entry.heapError)
+                heapInfoPanel?.setArenasText(entry.arenasText, entry.arenasError)
+                heapInfoPanel?.setHeapText(entry.heapInfoText, entry.heapInfoError)
+                heapInfoPanel?.setBinsText(entry.binsText, entry.binsError)
             }
             contextPanel?.updateHistoryState()
         }
