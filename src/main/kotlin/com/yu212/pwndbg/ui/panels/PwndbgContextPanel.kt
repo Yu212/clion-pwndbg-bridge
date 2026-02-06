@@ -1,8 +1,5 @@
 package com.yu212.pwndbg.ui.panels
 
-import com.intellij.execution.process.AnsiEscapeDecoder
-import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
@@ -10,12 +7,10 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.editor.EditorFactory
-import com.intellij.openapi.editor.markup.HighlighterLayer
-import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
+import com.yu212.pwndbg.ui.AnsiTextViewer
 import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Font
@@ -27,14 +22,16 @@ import javax.swing.event.ChangeListener
 class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
     override val id: String = "context"
     override val title: String = "Context"
+    override val supportsTextFontSize: Boolean = true
     private data class ContextEntry(
         val text: String,
         val isError: Boolean
     )
-
-    private val document = EditorFactory.getInstance().createDocument("")
-    private val editor = EditorFactory.getInstance().createViewer(document, project)
-    private val ansiDecoder = AnsiEscapeDecoder()
+    private val viewer = AnsiTextViewer(
+        project,
+        adjustHeight = true,
+        verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
+    )
     private var lastText: String? = null
     private val history = ArrayList<ContextEntry>()
     private val maxHistory = 1000
@@ -70,6 +67,12 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
     override val component: JComponent
         get() = rootPanel
 
+    override fun setTextFontSize(size: Int?) {
+        viewer.setFontSize(size)
+        rootPanel.revalidate()
+        rootPanel.repaint()
+    }
+
     fun clearOutput() {
         history.clear()
         pins.clear()
@@ -81,43 +84,7 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
     fun setContextOutput(text: String, isError: Boolean) {
         if (text == lastText) return
         lastText = text
-
-        val baseType = if (isError) ProcessOutputTypes.STDERR else ProcessOutputTypes.STDOUT
-        val segments = ArrayList<Pair<String, com.intellij.openapi.util.Key<*>>>()
-        ansiDecoder.escapeText(text, baseType) { chunk, attrs ->
-            if (chunk.isNotEmpty()) {
-                segments.add(chunk to attrs)
-            }
-        }
-
-        ApplicationManager.getApplication().invokeLater {
-            val scrollOffset = editor.scrollingModel.verticalScrollOffset
-            val caretOffset = editor.caretModel.offset
-
-            ApplicationManager.getApplication().runWriteAction {
-                document.setText(segments.joinToString(separator = "") { it.first })
-                editor.markupModel.removeAllHighlighters()
-
-                var offset = 0
-                for ((chunk, attrs) in segments) {
-                    val start = offset
-                    offset += chunk.length
-                    val type = ConsoleViewContentType.getConsoleViewType(attrs)
-                    val attributes = type.attributes ?: continue
-                    editor.markupModel.addRangeHighlighter(
-                        start,
-                        offset,
-                        HighlighterLayer.SYNTAX,
-                        attributes,
-                        HighlighterTargetArea.EXACT_RANGE
-                    )
-                }
-            }
-
-            val clampedCaret = caretOffset.coerceAtMost(document.textLength)
-            editor.caretModel.moveToOffset(clampedCaret)
-            editor.scrollingModel.scrollVertically(scrollOffset)
-        }
+        viewer.setText(text, isError, preserveView = true)
     }
 
     fun pushContextOutput(text: String, isError: Boolean) {
@@ -184,7 +151,7 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
     }
 
     override fun dispose() {
-        EditorFactory.getInstance().releaseEditor(editor)
+        viewer.dispose()
     }
 
     init {
@@ -208,7 +175,7 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
 
         rootPanel.layout = BorderLayout()
         rootPanel.add(topPanel, BorderLayout.NORTH)
-        rootPanel.add(editor.component, BorderLayout.CENTER)
+        rootPanel.add(viewer.component, BorderLayout.CENTER)
 
         prevButton.addActionListener { navigateTo(historyIndex - 1) }
         nextButton.addActionListener { navigateTo(historyIndex + 1) }
@@ -226,14 +193,6 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
         })
         installPinShortcuts()
         updateNavigationState()
-
-        editor.settings.apply {
-            isLineNumbersShown = false
-            isLineMarkerAreaShown = false
-            isFoldingOutlineShown = false
-            isRightMarginShown = false
-            isCaretRowShown = false
-        }
 
         actionToolbar.component.isOpaque = false
     }

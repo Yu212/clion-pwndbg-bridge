@@ -18,6 +18,7 @@ import javax.swing.*
 class PwndbgAddressPanel(private val project: Project) : PwndbgTabPanel {
     override val id: String = "address"
     override val title: String = "Address"
+    override val supportsTextFontSize: Boolean = true
     private val addressField = CommandHistoryField()
     private val xFormatField = CommandHistoryField("16gx")
     private val runButton = JButton("Inspect")
@@ -72,6 +73,14 @@ class PwndbgAddressPanel(private val project: Project) : PwndbgTabPanel {
 
     override val component: JComponent
         get() = rootPanel
+
+    override fun setTextFontSize(size: Int?) {
+        xinfoView.setTextFontSize(size)
+        telescopeView.setTextFontSize(size)
+        memoryView.setTextFontSize(size)
+        outputPanel.revalidate()
+        outputPanel.repaint()
+    }
 
     private fun inspectAddress() {
         val baseAddress = addressField.text.trim()

@@ -7,4 +7,9 @@ interface PwndbgTabPanel : Disposable {
     val id: String
     val title: String
     val component: JComponent
+    val supportsTextFontSize: Boolean
+        get() = false
+
+    fun setTextFontSize(size: Int?) {
+    }
 }

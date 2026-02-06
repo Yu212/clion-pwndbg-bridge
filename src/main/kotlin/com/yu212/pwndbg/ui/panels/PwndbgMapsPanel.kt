@@ -21,6 +21,7 @@ import javax.swing.JPanel
 class PwndbgMapsPanel(private val project: Project) : PwndbgTabPanel {
     override val id: String = "maps"
     override val title: String = "Maps"
+    override val supportsTextFontSize: Boolean = true
     private val vmmapView = CollapsibleSection("vmmap", project)
     private val checksecView = CollapsibleSection("checksec", project)
     private val gotView = CollapsibleSection("got", project)
@@ -53,6 +54,15 @@ class PwndbgMapsPanel(private val project: Project) : PwndbgTabPanel {
 
     override val component: JComponent
         get() = rootPanel
+
+    override fun setTextFontSize(size: Int?) {
+        checksecView.setTextFontSize(size)
+        vmmapView.setTextFontSize(size)
+        gotView.setTextFontSize(size)
+        pltView.setTextFontSize(size)
+        outputPanel.revalidate()
+        outputPanel.repaint()
+    }
 
     fun refreshAll() {
         val service = project.getService(PwndbgService::class.java)

@@ -3,9 +3,11 @@ package com.yu212.pwndbg.ui.panels
 import com.intellij.execution.impl.ConsoleViewImpl
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
-import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.colors.EditorColorsScheme
+import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.util.ui.components.BorderLayoutPanel
@@ -21,7 +23,8 @@ import javax.swing.*
 class PwndbgCommandPanel(private val project: Project) : PwndbgTabPanel {
     override val id: String = "command"
     override val title: String = "Command"
-    private val consoleView: ConsoleView = ConsoleViewImpl(project, true)
+    override val supportsTextFontSize: Boolean = true
+    private val consoleView = ConsoleViewImpl(project, true)
     private val ansiDecoder = AnsiEscapeDecoder()
     private val inputField = CommandHistoryField()
     private val sendButton = JButton("Send")
@@ -65,6 +68,16 @@ class PwndbgCommandPanel(private val project: Project) : PwndbgTabPanel {
 
     override val component: JComponent
         get() = rootPanel
+
+    override fun setTextFontSize(size: Int?) {
+        val editor = consoleView.editor ?: return
+        val scheme = (editor.colorsScheme.clone() as? EditorColorsScheme)
+            ?: (EditorColorsManager.getInstance().globalScheme.clone() as? EditorColorsScheme)
+            ?: return
+        val baseSize = editor.colorsScheme.editorFontSize
+        scheme.editorFontSize = size ?: baseSize
+        (editor as? EditorEx)?.colorsScheme = scheme
+    }
 
     fun clearOutput() {
         consoleView.clear()

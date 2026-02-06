@@ -20,7 +20,10 @@ import com.yu212.pwndbg.ui.panels.*
 @State(name = "PwndbgToolWindowLayout", storages = [Storage("pwndbg-toolwindows.xml")])
 class PwndbgToolWindowManager(private val project: Project) : PersistentStateComponent<PwndbgToolWindowManager.State>, Disposable {
     data class WindowState(var id: String = "", var tabs: MutableList<String> = mutableListOf())
-    data class State(var windows: MutableList<WindowState> = mutableListOf())
+    data class State(
+        var windows: MutableList<WindowState> = mutableListOf(),
+        var tabFontSizes: MutableMap<String, Int> = mutableMapOf()
+    )
 
     private var state = State()
     private var initialized = false
@@ -92,10 +95,30 @@ class PwndbgToolWindowManager(private val project: Project) : PersistentStateCom
         }
     }
 
+    fun getTabTextFontSize(tabId: String): Int? = state.tabFontSizes[tabId]
+
+    fun isTextFontSizeSupported(tabId: String): Boolean = panelsById[tabId]?.supportsTextFontSize == true
+
+    fun setTabTextFontSize(tabId: String, size: Int?) {
+        val panel = panelsById[tabId] ?: return
+        if (!panel.supportsTextFontSize) return
+        if (size == null) {
+            state.tabFontSizes.remove(tabId)
+        } else {
+            state.tabFontSizes[tabId] = size
+        }
+        panel.setTextFontSize(size)
+    }
+
     private fun initializeToolWindows() {
         createPanels()
         normalizeState()
 
+        for (panel in panelsList) {
+            if (!panel.supportsTextFontSize) continue
+            val size = state.tabFontSizes[panel.id]
+            panel.setTextFontSize(size)
+        }
         for (window in state.windows) {
             windowTabsById[window.id] = window.tabs.toMutableList()
             val toolWindow = getOrCreateToolWindow(window.id)
@@ -130,6 +153,7 @@ class PwndbgToolWindowManager(private val project: Project) : PersistentStateCom
         val normalizedWindows = mutableListOf<WindowState>()
         val usedIds = LinkedHashSet<String>()
         var nextIndex = 1
+        val validTabs = allTabs.toSet()
 
         for (window in state.windows) {
             val cleaned = mutableListOf<String>()
@@ -159,6 +183,7 @@ class PwndbgToolWindowManager(private val project: Project) : PersistentStateCom
         }
 
         state.windows = normalizedWindows.toMutableList()
+        state.tabFontSizes = state.tabFontSizes.filterKeys { it in validTabs }.toMutableMap()
     }
 
     private fun getOrCreateToolWindow(windowId: String): ToolWindow {
@@ -190,7 +215,7 @@ class PwndbgToolWindowManager(private val project: Project) : PersistentStateCom
             if (tabList.isEmpty()) continue
             windows.add(WindowState(windowId, tabList))
         }
-        return State(windows)
+        return State(windows, state.tabFontSizes.toMutableMap())
     }
 
     fun getTabId(content: Content): String? = tabIdByContent[content]
@@ -215,6 +240,7 @@ class PwndbgToolWindowManager(private val project: Project) : PersistentStateCom
         panelsById = panelsList.associateBy { it.id }
         panelsList.forEach { Disposer.register(this, it) }
     }
+
     private fun getTabTitle(tabId: String): String? = panelsById[tabId]?.title
 
     private fun getAllTabIds(): List<String> = panelsList.map { it.id }

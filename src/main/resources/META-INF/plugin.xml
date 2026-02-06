@@ -21,5 +21,10 @@
                popup="true">
             <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
         </group>
+        <group id="PwndbgTabFontSizeGroup"
+               class="com.yu212.pwndbg.ui.PwndbgTabFontSizeActionGroup"
+               popup="true">
+            <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
+        </group>
     </actions>
 </idea-plugin>
