@@ -18,7 +18,7 @@ import com.yu212.pwndbg.ui.panels.*
 
 @Service(Service.Level.PROJECT)
 @State(name = "PwndbgToolWindowLayout", storages = [Storage("pwndbg-toolwindows.xml")])
-class PwndbgToolWindowManager(private val project: Project) : PersistentStateComponent<PwndbgToolWindowManager.State>, Disposable {
+class PwndbgToolWindowManager(private val project: Project): PersistentStateComponent<PwndbgToolWindowManager.State>, Disposable {
     data class WindowState(var id: String = "", var tabs: MutableList<String> = mutableListOf())
     data class State(
         var windows: MutableList<WindowState> = mutableListOf(),

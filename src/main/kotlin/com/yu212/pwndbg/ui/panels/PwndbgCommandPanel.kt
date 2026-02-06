@@ -20,7 +20,7 @@ import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import javax.swing.*
 
-class PwndbgCommandPanel(private val project: Project) : PwndbgTabPanel {
+class PwndbgCommandPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "command"
     override val title: String = "Command"
     override val supportsTextFontSize: Boolean = true
@@ -59,7 +59,7 @@ class PwndbgCommandPanel(private val project: Project) : PwndbgTabPanel {
         inputField.focusTraversalKeysEnabled = false
         val inputMap = inputField.getInputMap(JComponent.WHEN_FOCUSED)
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), "pwndbgComplete")
-        inputField.actionMap.put("pwndbgComplete", object : AbstractAction() {
+        inputField.actionMap.put("pwndbgComplete", object: AbstractAction() {
             override fun actionPerformed(e: ActionEvent?) {
                 triggerCompletion()
             }
@@ -120,13 +120,13 @@ class PwndbgCommandPanel(private val project: Project) : PwndbgTabPanel {
                     return@invokeLater
                 }
                 val popup = JBPopupFactory.getInstance()
-                    .createPopupChooserBuilder(completions)
-                    .setTitle("Completion")
-                    .setItemChosenCallback { selected ->
-                        applyCompletion(selected)
-                    }
-                    .setRequestFocus(true)
-                    .createPopup()
+                        .createPopupChooserBuilder(completions)
+                        .setTitle("Completion")
+                        .setItemChosenCallback { selected ->
+                            applyCompletion(selected)
+                        }
+                        .setRequestFocus(true)
+                        .createPopup()
                 popup.showUnderneathOf(inputField)
             }
         }
@@ -143,9 +143,9 @@ class PwndbgCommandPanel(private val project: Project) : PwndbgTabPanel {
     private fun parseCompletions(result: String?): List<String> {
         if (result.isNullOrBlank()) return emptyList()
         return result
-            .split("\n")
-            .map { it.removeSuffix("\r") }
-            .filter { it.isNotBlank() }
-            .filterNot { it.contains("List may be truncated, max-completions reached.") }
+                .split("\n")
+                .map { it.removeSuffix("\r") }
+                .filter { it.isNotBlank() }
+                .filterNot { it.contains("List may be truncated, max-completions reached.") }
     }
 }

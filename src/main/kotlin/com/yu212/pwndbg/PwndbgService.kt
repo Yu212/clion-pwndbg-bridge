@@ -16,7 +16,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 @Service(Service.Level.PROJECT)
-class PwndbgService(private val project: Project) : Disposable {
+class PwndbgService(private val project: Project): Disposable {
     private val log = Logger.getInstance(PwndbgService::class.java)
     private var initialized = false
 
@@ -39,7 +39,7 @@ class PwndbgService(private val project: Project) : Disposable {
         initialized = true
 
         val connection = project.messageBus.connect(this)
-        connection.subscribe(XDebuggerManager.TOPIC, object : XDebuggerManagerListener {
+        connection.subscribe(XDebuggerManager.TOPIC, object: XDebuggerManagerListener {
             override fun processStarted(debugProcess: XDebugProcess) {
                 val manager = toolWindowManager
                 val commandPanel = manager.commandPanel
@@ -134,8 +134,8 @@ class PwndbgService(private val project: Project) : Disposable {
         )
         try {
             val process = ProcessBuilder(command)
-                .redirectErrorStream(true)
-                .start()
+                    .redirectErrorStream(true)
+                    .start()
             socatProcess = process
             commandPanel?.printOutput("[pwndbg] socat started on tcp:$DEFAULT_TCP_PORT -> $DEFAULT_TTY_PATH\n", isError = false)
             ApplicationManager.getApplication().executeOnPooledThread {

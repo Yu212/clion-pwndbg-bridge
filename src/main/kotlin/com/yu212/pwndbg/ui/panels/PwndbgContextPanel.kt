@@ -19,14 +19,16 @@ import javax.swing.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 
-class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
+class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "context"
     override val title: String = "Context"
     override val supportsTextFontSize: Boolean = true
+
     private data class ContextEntry(
         val text: String,
         val isError: Boolean
     )
+
     private val viewer = AnsiTextViewer(
         project,
         adjustHeight = true,
@@ -41,12 +43,12 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
     private val nextButton = JButton(">")
     private val latestButton = JButton(">>")
     private val statusLabel = JLabel("Latest")
-    private val refreshAction = object : AnAction("Refresh Context", "Refresh context", AllIcons.Actions.Refresh) {
+    private val refreshAction = object: AnAction("Refresh Context", "Refresh context", AllIcons.Actions.Refresh) {
         override fun actionPerformed(e: AnActionEvent) {
             refreshContext()
         }
     }
-    private val pinAction = object : AnAction("Add Pin", "Add pin", AllIcons.General.Pin) {
+    private val pinAction = object: AnAction("Add Pin", "Add pin", AllIcons.General.Pin) {
         override fun actionPerformed(e: AnActionEvent) {
             togglePinAtCurrent()
         }
@@ -181,7 +183,7 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
         nextButton.addActionListener { navigateTo(historyIndex + 1) }
         latestButton.addActionListener { navigateTo(history.lastIndex) }
 
-        timelineSlider.addChangeListener(object : ChangeListener {
+        timelineSlider.addChangeListener(object: ChangeListener {
             override fun stateChanged(e: ChangeEvent?) {
                 if (sliderUpdating) return
                 if (!timelineSlider.isEnabled) return
@@ -250,27 +252,27 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
         inputMap.put(KeyStroke.getKeyStroke("LEFT"), "pwndbg.context.prev")
         inputMap.put(KeyStroke.getKeyStroke("RIGHT"), "pwndbg.context.next")
 
-        actionMap.put("pwndbg.pin.toggle", object : AbstractAction() {
+        actionMap.put("pwndbg.pin.toggle", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 togglePinAtCurrent()
             }
         })
-        actionMap.put("pwndbg.pin.prev", object : AbstractAction() {
+        actionMap.put("pwndbg.pin.prev", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 jumpPin(-1)
             }
         })
-        actionMap.put("pwndbg.pin.next", object : AbstractAction() {
+        actionMap.put("pwndbg.pin.next", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 jumpPin(1)
             }
         })
-        actionMap.put("pwndbg.context.prev", object : AbstractAction() {
+        actionMap.put("pwndbg.context.prev", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 navigateTo(historyIndex - 1)
             }
         })
-        actionMap.put("pwndbg.context.next", object : AbstractAction() {
+        actionMap.put("pwndbg.context.next", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 navigateTo(historyIndex + 1)
             }
@@ -295,17 +297,17 @@ class PwndbgContextPanel(private val project: Project) : PwndbgTabPanel {
 
     private fun refreshContext() {
         project.getService(PwndbgService::class.java)
-            .executeCommandCapture("context") { result, error ->
-                ApplicationManager.getApplication().invokeLater {
-                    if (!error.isNullOrBlank()) {
-                        setContextOutput("Pwndbg context refresh failed: $error\n", isError = true)
-                        return@invokeLater
-                    }
-                    if (!result.isNullOrBlank()) {
-                        replaceLatestContextOutput(result + "\n", isError = false)
+                .executeCommandCapture("context") { result, error ->
+                    ApplicationManager.getApplication().invokeLater {
+                        if (!error.isNullOrBlank()) {
+                            setContextOutput("Pwndbg context refresh failed: $error\n", isError = true)
+                            return@invokeLater
+                        }
+                        if (!result.isNullOrBlank()) {
+                            replaceLatestContextOutput(result + "\n", isError = false)
+                        }
                     }
                 }
-            }
     }
 
     private fun createActionToolbar(): com.intellij.openapi.actionSystem.ActionToolbar {

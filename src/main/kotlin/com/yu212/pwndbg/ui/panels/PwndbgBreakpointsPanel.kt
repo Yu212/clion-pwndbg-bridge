@@ -19,11 +19,11 @@ import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import javax.swing.*
 
-class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
+class PwndbgBreakpointsPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "breakpoints"
     override val title: String = "Breakpoints"
     private val model = DefaultListModel<BreakpointEntry>()
-    private val list = object : JBList<BreakpointEntry>(model) {
+    private val list = object: JBList<BreakpointEntry>(model) {
         override fun processMouseEvent(e: MouseEvent) {
             val hit = hitTest(e)
             if (hit != null) {
@@ -57,7 +57,7 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
     init {
         list.cellRenderer = BreakpointCellRenderer()
         list.selectionModel = BreakpointSelectionModel(model)
-        list.selectionMode = javax.swing.ListSelectionModel.SINGLE_SELECTION
+        list.selectionMode = ListSelectionModel.SINGLE_SELECTION
         list.fixedCellHeight = -1
         list.setEmptyText("No breakpoints")
 
@@ -65,21 +65,21 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
         installBreakpointListener()
 
         val toolbar = ToolbarDecorator.createDecorator(list)
-            .setAddAction(null)
-            .setEditAction(null)
-            .setMoveUpAction(null)
-            .setMoveDownAction(null)
-            .setRemoveAction { deleteSelected() }
-            .addExtraAction(object : com.intellij.openapi.actionSystem.AnAction(
-                "Refresh",
-                "Refresh breakpoints",
-                AllIcons.Actions.Refresh
-            ) {
-                override fun actionPerformed(e: com.intellij.openapi.actionSystem.AnActionEvent) {
-                    refreshAll()
-                }
-            })
-            .createPanel()
+                .setAddAction(null)
+                .setEditAction(null)
+                .setMoveUpAction(null)
+                .setMoveDownAction(null)
+                .setRemoveAction { deleteSelected() }
+                .addExtraAction(object: com.intellij.openapi.actionSystem.AnAction(
+                    "Refresh",
+                    "Refresh breakpoints",
+                    AllIcons.Actions.Refresh
+                ) {
+                    override fun actionPerformed(e: com.intellij.openapi.actionSystem.AnActionEvent) {
+                        refreshAll()
+                    }
+                })
+                .createPanel()
 
         rootPanel.add(toolbar, BorderLayout.CENTER)
         refreshAll()
@@ -90,7 +90,7 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
 
     private fun installBreakpointListener() {
         val manager = XDebuggerManager.getInstance(project).breakpointManager
-        val listener = object : XBreakpointListener<XBreakpoint<*>> {
+        val listener = object: XBreakpointListener<XBreakpoint<*>> {
             override fun breakpointAdded(breakpoint: XBreakpoint<*>) = refreshAll()
             override fun breakpointRemoved(breakpoint: XBreakpoint<*>) = refreshAll()
             override fun breakpointChanged(breakpoint: XBreakpoint<*>) = refreshAll()
@@ -101,8 +101,8 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
         }
     }
 
-    private fun <B : XBreakpoint<P>, P : XBreakpointProperties<*>> addBreakpointListener(
-        manager: com.intellij.xdebugger.breakpoints.XBreakpointManager,
+    private fun <B: XBreakpoint<P>, P: XBreakpointProperties<*>> addBreakpointListener(
+        manager: XBreakpointManager,
         type: XBreakpointType<B, P>,
         listener: XBreakpointListener<XBreakpoint<*>>
     ) {
@@ -116,7 +116,7 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
         val actionMap = list.actionMap
 
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "pwndbg.toggle")
-        actionMap.put("pwndbg.toggle", object : AbstractAction() {
+        actionMap.put("pwndbg.toggle", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 val index = list.selectedIndex
                 if (index < 0) return
@@ -127,12 +127,12 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
             }
         })
 
-        val nextAction = object : AbstractAction() {
+        val nextAction = object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 moveSelection(1)
             }
         }
-        val prevAction = object : AbstractAction() {
+        val prevAction = object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 moveSelection(-1)
             }
@@ -191,15 +191,17 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
                 entry.breakpoint.isEnabled = !entry.breakpoint.isEnabled
                 list.repaint(list.getCellBounds(index, index))
             }
+
             is BreakpointEntry.Gdb -> {
                 val command = if (entry.enabled) "disable ${entry.id}" else "enable ${entry.id}"
                 project.getService(PwndbgService::class.java)
-                    .executeCommandCapture(command) { _, _ ->
-                        ApplicationManager.getApplication().invokeLater {
-                            model.set(index, entry.copy(enabled = !entry.enabled))
+                        .executeCommandCapture(command) { _, _ ->
+                            ApplicationManager.getApplication().invokeLater {
+                                model.set(index, entry.copy(enabled = !entry.enabled))
+                            }
                         }
-                    }
             }
+
             is BreakpointEntry.Header -> Unit
         }
     }
@@ -212,14 +214,16 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
                 XDebuggerManager.getInstance(project).breakpointManager.removeBreakpoint(entry.breakpoint)
                 refreshAll()
             }
+
             is BreakpointEntry.Gdb -> {
                 project.getService(PwndbgService::class.java)
-                    .executeCommandCapture("delete ${entry.id}") { _, _ ->
-                        ApplicationManager.getApplication().invokeLater {
-                            model.remove(index)
+                        .executeCommandCapture("delete ${entry.id}") { _, _ ->
+                            ApplicationManager.getApplication().invokeLater {
+                                model.remove(index)
+                            }
                         }
-                    }
             }
+
             is BreakpointEntry.Header -> Unit
         }
     }
@@ -233,9 +237,9 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
     fun refreshAll() {
         ApplicationManager.getApplication().invokeLater {
             val clionBreakpoints = XDebuggerManager.getInstance(project)
-                .breakpointManager
-                .allBreakpoints
-                .toList()
+                    .breakpointManager
+                    .allBreakpoints
+                    .toList()
 
             model.clear()
             model.addElement(BreakpointEntry.Header("CLion breakpoints"))
@@ -251,23 +255,23 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
 
     private fun refreshGdbBreakpoints() {
         project.getService(PwndbgService::class.java)
-            .executeCommandCapture("info breakpoints") { output, error ->
-                val gdbBreakpoints = if (error.isNullOrBlank()) {
-                    parseGdbBreakpoints(output.orEmpty())
-                } else {
-                    emptyList()
-                }
+                .executeCommandCapture("info breakpoints") { output, error ->
+                    val gdbBreakpoints = if (error.isNullOrBlank()) {
+                        parseGdbBreakpoints(output.orEmpty())
+                    } else {
+                        emptyList()
+                    }
 
-                ApplicationManager.getApplication().invokeLater {
-                    while (model.size() > 0 && model.lastElement() !is BreakpointEntry.Header) {
-                        model.remove(model.size() - 1)
+                    ApplicationManager.getApplication().invokeLater {
+                        while (model.size() > 0 && model.lastElement() !is BreakpointEntry.Header) {
+                            model.remove(model.size() - 1)
+                        }
+                        for (bp in gdbBreakpoints) {
+                            model.addElement(BreakpointEntry.Gdb(bp.id, bp.summary, bp.enabled))
+                        }
+                        ensureValidSelection()
                     }
-                    for (bp in gdbBreakpoints) {
-                        model.addElement(BreakpointEntry.Gdb(bp.id, bp.summary, bp.enabled))
-                    }
-                    ensureValidSelection()
                 }
-            }
     }
 
     private fun parseGdbBreakpoints(output: String): List<GdbBreakpoint> {
@@ -328,14 +332,14 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
     private data class GdbBreakpoint(val id: String, val summary: String, val enabled: Boolean)
 
     private sealed class BreakpointEntry {
-        data class Header(val title: String) : BreakpointEntry()
-        data class Clion(val breakpoint: XBreakpoint<*>) : BreakpointEntry()
-        data class Gdb(val id: String, val summary: String, val enabled: Boolean) : BreakpointEntry()
+        data class Header(val title: String): BreakpointEntry()
+        data class Clion(val breakpoint: XBreakpoint<*>): BreakpointEntry()
+        data class Gdb(val id: String, val summary: String, val enabled: Boolean): BreakpointEntry()
     }
 
     private class BreakpointSelectionModel(
         private val model: DefaultListModel<BreakpointEntry>
-    ) : javax.swing.DefaultListSelectionModel() {
+    ): DefaultListSelectionModel() {
         override fun setSelectionInterval(index0: Int, index1: Int) {
             if (index0 < 0 || index0 >= model.size()) return
             if (model.getElementAt(index0) is BreakpointEntry.Header) return
@@ -349,7 +353,7 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
         }
     }
 
-    private class BreakpointCellRenderer : JPanel(BorderLayout()), ListCellRenderer<BreakpointEntry> {
+    private class BreakpointCellRenderer: JPanel(BorderLayout()), ListCellRenderer<BreakpointEntry> {
         private val checkBox = JCheckBox()
         private val label = JLabel()
 
@@ -375,12 +379,14 @@ class PwndbgBreakpointsPanel(private val project: Project) : PwndbgTabPanel {
                     label.text = value.title
                     label.font = label.font.deriveFont(Font.BOLD)
                 }
+
                 is BreakpointEntry.Clion -> {
                     checkBox.isVisible = true
                     checkBox.isSelected = value.breakpoint.isEnabled
                     label.text = buildClionLabel(value.breakpoint)
                     label.font = list.font
                 }
+
                 is BreakpointEntry.Gdb -> {
                     checkBox.isVisible = true
                     checkBox.isSelected = value.enabled

@@ -3,7 +3,7 @@ package com.yu212.pwndbg.ui
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.project.Project
 
-class PwndbgTabFontSizeActionGroup : ActionGroup("Text Font Size", true) {
+class PwndbgTabFontSizeActionGroup: ActionGroup("Text Font Size", true) {
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
         val event = e ?: return emptyArray()
         val project = event.getData(CommonDataKeys.PROJECT) ?: return emptyArray()
@@ -33,7 +33,7 @@ class PwndbgTabFontSizeActionGroup : ActionGroup("Text Font Size", true) {
         private val tabId: String,
         private val fontSize: Int?,
         label: String
-    ) : ToggleAction(label) {
+    ): ToggleAction(label) {
         override fun isSelected(e: AnActionEvent): Boolean {
             val manager = project.getService(PwndbgToolWindowManager::class.java)
             return manager.getTabTextFontSize(tabId) == fontSize
@@ -42,7 +42,7 @@ class PwndbgTabFontSizeActionGroup : ActionGroup("Text Font Size", true) {
         override fun setSelected(e: AnActionEvent, state: Boolean) {
             if (!state) return
             project.getService(PwndbgToolWindowManager::class.java)
-                .setTabTextFontSize(tabId, fontSize)
+                    .setTabTextFontSize(tabId, fontSize)
         }
     }
 }

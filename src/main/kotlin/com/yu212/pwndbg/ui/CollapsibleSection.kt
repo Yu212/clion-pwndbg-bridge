@@ -21,18 +21,19 @@ class CollapsibleSection(
     startCollapsed: Boolean = false,
     titleComponent: JComponent? = null,
     extraActions: List<AnAction> = emptyList()
-) : BorderLayoutPanel(), Disposable {
+): BorderLayoutPanel(), Disposable {
     constructor(
         titleComponent: JComponent,
         project: Project,
         startCollapsed: Boolean = false,
         extraActions: List<AnAction> = emptyList()
-    ) : this("", project, startCollapsed, titleComponent, extraActions)
+    ): this("", project, startCollapsed, titleComponent, extraActions)
+
     private val header = JPanel(BorderLayout(6, 0))
     private val headerLabel = JLabel(title)
     private val viewer = AnsiTextViewer(project, adjustHeight = true)
     private var collapsed = startCollapsed
-    private val toggleAction = object : AnAction("Collapse") {
+    private val toggleAction = object: AnAction("Collapse") {
         override fun actionPerformed(e: AnActionEvent) {
             setCollapsed(!collapsed)
         }

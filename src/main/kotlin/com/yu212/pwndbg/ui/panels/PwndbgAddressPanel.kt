@@ -15,7 +15,7 @@ import java.awt.Dimension
 import java.awt.FlowLayout
 import javax.swing.*
 
-class PwndbgAddressPanel(private val project: Project) : PwndbgTabPanel {
+class PwndbgAddressPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "address"
     override val title: String = "Address"
     override val supportsTextFontSize: Boolean = true
@@ -26,10 +26,10 @@ class PwndbgAddressPanel(private val project: Project) : PwndbgTabPanel {
     private val xHeader = JPanel(FlowLayout(FlowLayout.LEFT, 6, 0))
     private val xinfoView = CollapsibleSection("xinfo", project)
     private val telescopeTitleLabel = JLabel()
-    private val telescopeDecreaseAction = object : AnAction("", null, AllIcons.General.Remove) {
+    private val telescopeDecreaseAction = object: AnAction("", null, AllIcons.General.Remove) {
         override fun actionPerformed(e: AnActionEvent) = updateTelescopeLines(-1)
     }
-    private val telescopeIncreaseAction = object : AnAction("", null, AllIcons.General.Add) {
+    private val telescopeIncreaseAction = object: AnAction("", null, AllIcons.General.Add) {
         override fun actionPerformed(e: AnActionEvent) = updateTelescopeLines(1)
     }
     private val telescopeView = CollapsibleSection(

@@ -10,7 +10,7 @@ import javax.swing.KeyStroke
 class CommandHistoryField(
     initialText: String = "",
     private val maxHistory: Int = 1000
-) : JBTextField(initialText) {
+): JBTextField(initialText) {
     private data class HistoryEntry(val index: Int, val text: String) {
         override fun toString(): String = text
     }
@@ -42,16 +42,16 @@ class CommandHistoryField(
         if (history.isEmpty()) return
         val items = history.indices.reversed().map { HistoryEntry(it, history[it]) }
         val popup = JBPopupFactory.getInstance()
-            .createPopupChooserBuilder(items)
-            .setTitle("History")
-            .setItemChosenCallback { selected ->
-                historyIndex = selected.index
-                pendingText = null
-                text = selected.text
-                caretPosition = text.length
-            }
-            .setRequestFocus(true)
-            .createPopup()
+                .createPopupChooserBuilder(items)
+                .setTitle("History")
+                .setItemChosenCallback { selected ->
+                    historyIndex = selected.index
+                    pendingText = null
+                    text = selected.text
+                    caretPosition = text.length
+                }
+                .setRequestFocus(true)
+                .createPopup()
         popup.showUnderneathOf(this)
     }
 
@@ -63,17 +63,17 @@ class CommandHistoryField(
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0), "historyDown")
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.ALT_DOWN_MASK), "historyPopup")
 
-        actionMap.put("historyUp", object : AbstractAction() {
+        actionMap.put("historyUp", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 moveHistory(-1)
             }
         })
-        actionMap.put("historyDown", object : AbstractAction() {
+        actionMap.put("historyDown", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 moveHistory(1)
             }
         })
-        actionMap.put("historyPopup", object : AbstractAction() {
+        actionMap.put("historyPopup", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
                 showHistoryPopup()
             }

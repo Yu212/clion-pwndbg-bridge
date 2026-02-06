@@ -21,7 +21,7 @@ class AnsiTextViewer(
     project: Project,
     private val adjustHeight: Boolean = false,
     private val verticalScrollBarPolicy: Int = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER
-) : Disposable {
+): Disposable {
     private val document = EditorFactory.getInstance().createDocument("")
     val editor: Editor = EditorFactory.getInstance().createViewer(document, project)
     val component: JComponent = editor.component

@@ -3,7 +3,7 @@ package com.yu212.pwndbg.ui
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.project.Project
 
-class PwndbgMoveTabActionGroup : ActionGroup("Move Tab To", true) {
+class PwndbgMoveTabActionGroup: ActionGroup("Move Tab To", true) {
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
         val event = e ?: return emptyArray()
         val project = event.getData(CommonDataKeys.PROJECT) ?: return emptyArray()
@@ -30,7 +30,7 @@ class PwndbgMoveTabActionGroup : ActionGroup("Move Tab To", true) {
     private class MoveToNewWindowAction(
         private val project: Project,
         private val tabId: String
-    ) : AnAction("New Window") {
+    ): AnAction("New Window") {
         override fun actionPerformed(e: AnActionEvent) {
             project.getService(PwndbgToolWindowManager::class.java).moveTabToWindow(tabId, null)
         }
@@ -41,7 +41,7 @@ class PwndbgMoveTabActionGroup : ActionGroup("Move Tab To", true) {
         private val tabId: String,
         private val targetWindowId: String,
         label: String
-    ) : AnAction(label) {
+    ): AnAction(label) {
         override fun actionPerformed(e: AnActionEvent) {
             project.getService(PwndbgToolWindowManager::class.java).moveTabToWindow(tabId, targetWindowId)
         }

@@ -19,11 +19,11 @@ import org.eclipse.lsp4j.debug.EvaluateArguments
 
 class CidrSessionBridge(
     private val debugProcess: CidrDebugProcess
-) : Disposable {
+): Disposable {
     private val log = Logger.getInstance(CidrSessionBridge::class.java)
     private val xDebugSession: XDebugSession = debugProcess.session
 
-    private val outputListener = object : ProcessAdapter() {
+    private val outputListener = object: ProcessAdapter() {
         override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
             val isError = outputType === ProcessOutputTypes.STDERR || outputType === ProcessOutputTypes.SYSTEM
             ApplicationManager.getApplication().invokeLater {
@@ -34,7 +34,7 @@ class CidrSessionBridge(
     }
 
     private var consoleOffset = 0
-    private val consoleListener = object : DocumentListener {
+    private val consoleListener = object: DocumentListener {
         override fun documentChanged(event: DocumentEvent) {
             val commandPanel = toolWindowManager.commandPanel
             val doc = event.document
@@ -50,7 +50,7 @@ class CidrSessionBridge(
         }
     }
 
-    private val sessionListener = object : XDebugSessionListener {
+    private val sessionListener = object: XDebugSessionListener {
         override fun sessionPaused() {
             val manager = toolWindowManager
             val commandPanel = manager.commandPanel
@@ -155,6 +155,5 @@ class CidrSessionBridge(
     }
 
     override fun dispose() {
-        // listeners are disposed with this Disposable.
     }
 }
