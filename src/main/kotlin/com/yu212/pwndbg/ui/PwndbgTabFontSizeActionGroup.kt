@@ -18,7 +18,7 @@ class PwndbgTabFontSizeActionGroup: ActionGroup("Text Font Size", true) {
         val tabId = manager.getTabId(content) ?: return emptyArray()
         if (!manager.isTextFontSizeSupported(tabId)) return emptyArray()
 
-        val sizes = listOf(10, 11, 12, 13, 14, 16, 18, 20, 24)
+        val sizes = listOf(8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24)
         val actions = mutableListOf<AnAction>()
         actions.add(FontSizeToggleAction(project, tabId, null, "Default"))
         actions.add(Separator.getInstance())

@@ -33,7 +33,6 @@ class HeapAnsiTextViewer(
             }
             styles[lineIndex].add(attributes.foregroundColor)
         }
-        println("${lineIndex}, $lineCount, $styles")
         val foldingModel = editor.foldingModel
         foldingModel.runBatchFoldingOperation {
             foldingModel.allFoldRegions.forEach { foldingModel.removeFoldRegion(it) }

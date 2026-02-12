@@ -12,6 +12,7 @@ import com.intellij.openapi.wm.RegisterToolWindowTask
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.openapi.wm.impl.content.ToolWindowContentUi
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import com.yu212.pwndbg.ui.panels.*
@@ -78,7 +79,6 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
         }
         for (windowId in windowTabsById.keys) {
             val toolWindow = toolWindowManager.getToolWindow(windowId) ?: continue
-            println(toolWindow.anchor to toolWindow.isSplitMode)
             if (openedSlots.add(toolWindow.anchor to toolWindow.isSplitMode)) {
                 toolWindow.show()
             }
@@ -206,6 +206,7 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
         val task = RegisterToolWindowTask(id = windowId, anchor = ToolWindowAnchor.RIGHT, canCloseContent = false)
         val toolWindow = toolWindowManager.registerToolWindow(task)
         toolWindow.stripeTitle = "Pwndbg"
+        ToolWindowContentUi.setAllowTabsReordering(toolWindow, true)
         return toolWindow
     }
 
