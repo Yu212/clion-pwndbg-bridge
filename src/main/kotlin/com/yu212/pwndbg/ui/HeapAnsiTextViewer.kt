@@ -46,7 +46,7 @@ class HeapAnsiTextViewer(
                 if (runLength >= 5) {
                     val startOffset = document.getLineStartOffset(runStart + 1)
                     val endOffset = document.getLineEndOffset(runEnd - 2)
-                    val placeholder = "0x%x bytes / %d lines".format((runLength - 2) * 16, runLength - 2)
+                    val placeholder = "... 0x%x bytes / %d lines".format((runLength - 2) * 16, runLength - 2)
                     val region = foldingModel.addFoldRegion(startOffset, endOffset, placeholder)
                     if (region != null) {
                         region.isExpanded = false
