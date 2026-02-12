@@ -13,7 +13,7 @@ import com.yu212.pwndbg.ui.PwndbgContextHistoryManager
 import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Font
-import java.util.Hashtable
+import java.util.*
 import javax.swing.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener

@@ -17,13 +17,13 @@ import java.awt.Dimension
 import javax.swing.JComponent
 import javax.swing.ScrollPaneConstants
 
-class AnsiTextViewer(
+open class AnsiTextViewer(
     project: Project,
     private val adjustHeight: Boolean = false,
-    private val verticalScrollBarPolicy: Int = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER
+    private val verticalScrollBarPolicy: Int = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
 ): Disposable {
-    private val document = EditorFactory.getInstance().createDocument("")
-    val editor: Editor = EditorFactory.getInstance().createViewer(document, project)
+    protected val document = EditorFactory.getInstance().createDocument("")
+    protected val editor: Editor = EditorFactory.getInstance().createViewer(document, project)
     val component: JComponent = editor.component
     private val ansiDecoder = AnsiEscapeDecoder()
     private val baseScheme = editor.colorsScheme
@@ -90,7 +90,7 @@ class AnsiTextViewer(
         return segments
     }
 
-    private fun applySegments(segments: List<Pair<String, com.intellij.openapi.util.Key<*>>>) {
+    protected open fun applySegments(segments: List<Pair<String, com.intellij.openapi.util.Key<*>>>) {
         document.setText(segments.joinToString(separator = "") { it.first })
         editor.markupModel.removeAllHighlighters()
 

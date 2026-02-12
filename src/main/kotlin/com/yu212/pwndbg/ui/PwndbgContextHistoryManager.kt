@@ -5,7 +5,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.yu212.pwndbg.PwndbgService
 import com.yu212.pwndbg.settings.PwndbgSettingsService
-import java.util.TreeSet
+import java.util.*
 
 @Service(Service.Level.PROJECT)
 class PwndbgContextHistoryManager(private val project: Project) {
