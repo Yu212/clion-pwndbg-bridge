@@ -11,6 +11,7 @@ import com.intellij.xdebugger.XDebuggerManagerListener
 import com.jetbrains.cidr.execution.debugger.CidrDebugProcess
 import com.jetbrains.cidr.execution.debugger.backend.dap.DapDriver
 import com.yu212.pwndbg.debug.CidrSessionBridge
+import com.yu212.pwndbg.settings.PwndbgSettingsService
 import com.yu212.pwndbg.ui.PwndbgToolWindowManager
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -28,11 +29,13 @@ class PwndbgService(private val project: Project): Disposable {
 
     companion object {
         private const val DEFAULT_TTY_PATH = "/tmp/ttyPWN"
-        private const val DEFAULT_TCP_PORT = 0xdead
     }
 
     private val toolWindowManager: PwndbgToolWindowManager
         get() = project.getService(PwndbgToolWindowManager::class.java)
+
+    private val settings: PwndbgSettingsService
+        get() = ApplicationManager.getApplication().getService(PwndbgSettingsService::class.java)
 
     fun init() {
         if (initialized) return
@@ -120,23 +123,28 @@ class PwndbgService(private val project: Project): Disposable {
 
     fun startSocat() {
         val commandPanel = toolWindowManager.commandPanel
+        if (!settings.isSocatEnabled()) {
+            commandPanel?.printOutput("[pwndbg] socat is disabled in settings.\n", isError = false)
+            return
+        }
         if (socatProcess?.isAlive == true) {
             commandPanel?.printOutput("[pwndbg] socat is already running.\n", isError = false)
             return
         }
+        val tcpPort = settings.getSocatPort()
         val command = listOf(
             "socat",
             "-d",
             "-d",
             "pty,raw,echo=0,link=$DEFAULT_TTY_PATH",
-            "tcp-listen:$DEFAULT_TCP_PORT,reuseaddr"
+            "tcp-listen:$tcpPort,reuseaddr"
         )
         try {
             val process = ProcessBuilder(command)
                     .redirectErrorStream(true)
                     .start()
             socatProcess = process
-            commandPanel?.printOutput("[pwndbg] socat started on tcp:$DEFAULT_TCP_PORT -> $DEFAULT_TTY_PATH\n", isError = false)
+            commandPanel?.printOutput("[pwndbg] socat started on tcp:$tcpPort -> $DEFAULT_TTY_PATH\n", isError = false)
             ApplicationManager.getApplication().executeOnPooledThread {
                 BufferedReader(InputStreamReader(process.inputStream)).useLines { lines ->
                     lines.forEach { line ->
