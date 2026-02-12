@@ -9,6 +9,7 @@ A CLion plugin built for CTFs that brings Pwndbg-powered GDB workflows into a mo
 - **Breakpoints**: Unified list for CLion and GDB breakpoints with enable/disable and jump-to-source.
 - **Address inspector**: `xinfo`, `telescope`, and `x/` views with quick format tweaks.
 - **Maps**: `checksec`, `vmmap`, `got`, and `plt` with one-click refresh.
+- **Heap views**: `vis-heap-chunks` output with folding and a heap info panel for `arenas`, `heap`, and `bins`.
 - **External tooling bridge**: `socat` listens on TCP port `0xdead`, so tools like pwntools can connect.
 
 ## Requirements
