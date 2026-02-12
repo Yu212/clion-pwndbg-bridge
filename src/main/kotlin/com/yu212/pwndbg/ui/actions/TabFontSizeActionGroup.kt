@@ -1,9 +1,10 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.actions
 
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.project.Project
+import com.yu212.pwndbg.ui.PwndbgToolWindowManager
 
-class PwndbgTabFontSizeActionGroup: ActionGroup("Text Font Size", true) {
+class TabFontSizeActionGroup: ActionGroup("Text Font Size", true) {
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
         val event = e ?: return emptyArray()
         val project = event.getData(CommonDataKeys.PROJECT) ?: return emptyArray()

@@ -20,7 +20,7 @@ import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import javax.swing.*
 
-class PwndbgCommandPanel(private val project: Project): PwndbgTabPanel {
+class CommandPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "command"
     override val title: String = "Command"
     override val supportsTextFontSize: Boolean = true

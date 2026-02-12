@@ -9,7 +9,7 @@ import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.ui.AnsiTextViewer
-import com.yu212.pwndbg.ui.PwndbgContextHistoryManager
+import com.yu212.pwndbg.ui.ContextHistoryManager
 import com.yu212.pwndbg.ui.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Font
@@ -18,7 +18,7 @@ import javax.swing.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
 
-class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
+class ContextPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "context"
     override val title: String = "Context"
     override val supportsTextFontSize: Boolean = true
@@ -28,8 +28,8 @@ class PwndbgContextPanel(private val project: Project): PwndbgTabPanel {
         verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
     )
     private var lastText: String? = null
-    private val historyManager: PwndbgContextHistoryManager
-        get() = project.getService(PwndbgContextHistoryManager::class.java)
+    private val historyManager: ContextHistoryManager
+        get() = project.getService(ContextHistoryManager::class.java)
 
     private val prevButton = JButton("<")
     private val nextButton = JButton(">")

@@ -54,7 +54,7 @@ class CidrSessionBridge(
         override fun sessionPaused() {
             log.debug("Pwndbg: session paused, refreshing context.")
             val historyManager = xDebugSession.project
-                    .getService(com.yu212.pwndbg.ui.PwndbgContextHistoryManager::class.java)
+                    .getService(com.yu212.pwndbg.ui.ContextHistoryManager::class.java)
             historyManager.refresh { entry ->
                 historyManager.pushEntry(entry)
             }

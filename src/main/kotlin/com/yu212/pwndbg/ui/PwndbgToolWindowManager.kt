@@ -32,19 +32,19 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
     private val toolWindowManager = ToolWindowManager.getInstance(project)
     private val contentFactory = ContentFactory.getInstance()
 
-    var commandPanel: PwndbgCommandPanel? = null
+    var commandPanel: CommandPanel? = null
         private set
-    var contextPanel: PwndbgContextPanel? = null
+    var contextPanel: ContextPanel? = null
         private set
-    var breakpointsPanel: PwndbgBreakpointsPanel? = null
+    var breakpointsPanel: BreakpointsPanel? = null
         private set
-    var addressPanel: PwndbgAddressPanel? = null
+    var addressPanel: AddressPanel? = null
         private set
-    var mapsPanel: PwndbgMapsPanel? = null
+    var mapsPanel: MapsPanel? = null
         private set
-    var heapPanel: PwndbgHeapPanel? = null
+    var heapPanel: HeapPanel? = null
         private set
-    var heapInfoPanel: PwndbgHeapInfoPanel? = null
+    var heapInfoPanel: HeapInfoPanel? = null
         private set
 
     private var panelsList: List<PwndbgTabPanel> = emptyList()
@@ -246,13 +246,13 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
     private fun createPanels() {
         ApplicationManager.getApplication().assertIsDispatchThread()
         panelsList = listOf(
-            PwndbgCommandPanel(project).also { commandPanel = it },
-            PwndbgContextPanel(project).also { contextPanel = it },
-            PwndbgBreakpointsPanel(project).also { breakpointsPanel = it },
-            PwndbgAddressPanel(project).also { addressPanel = it },
-            PwndbgMapsPanel(project).also { mapsPanel = it },
-            PwndbgHeapPanel(project).also { heapPanel = it },
-            PwndbgHeapInfoPanel(project).also { heapInfoPanel = it }
+            CommandPanel(project).also { commandPanel = it },
+            ContextPanel(project).also { contextPanel = it },
+            BreakpointsPanel(project).also { breakpointsPanel = it },
+            AddressPanel(project).also { addressPanel = it },
+            MapsPanel(project).also { mapsPanel = it },
+            HeapPanel(project).also { heapPanel = it },
+            HeapInfoPanel(project).also { heapInfoPanel = it }
         )
         panelsById = panelsList.associateBy { it.id }
         panelsList.forEach { Disposer.register(this, it) }

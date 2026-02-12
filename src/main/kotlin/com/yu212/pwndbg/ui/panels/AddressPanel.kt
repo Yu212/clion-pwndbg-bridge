@@ -15,7 +15,7 @@ import java.awt.Dimension
 import java.awt.FlowLayout
 import javax.swing.*
 
-class PwndbgAddressPanel(private val project: Project): PwndbgTabPanel {
+class AddressPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "address"
     override val title: String = "Address"
     override val supportsTextFontSize: Boolean = true

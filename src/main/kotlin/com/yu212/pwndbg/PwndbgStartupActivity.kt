@@ -8,6 +8,6 @@ class PwndbgStartupActivity: ProjectActivity {
     override suspend fun execute(project: Project) {
         project.getService(PwndbgService::class.java).init()
         project.getService(PwndbgToolWindowManager::class.java).ensureInitialized()
-        PwndbgDapDebuggerRegistrar.ensureRegistered()
+        DapDebuggerRegistrar.ensureRegistered()
     }
 }

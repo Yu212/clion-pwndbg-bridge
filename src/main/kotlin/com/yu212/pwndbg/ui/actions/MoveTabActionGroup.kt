@@ -1,9 +1,10 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.actions
 
 import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.project.Project
+import com.yu212.pwndbg.ui.PwndbgToolWindowManager
 
-class PwndbgMoveTabActionGroup: ActionGroup("Move Tab To", true) {
+class MoveTabActionGroup: ActionGroup("Move Tab To", true) {
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
         val event = e ?: return emptyArray()
         val project = event.getData(CommonDataKeys.PROJECT) ?: return emptyArray()

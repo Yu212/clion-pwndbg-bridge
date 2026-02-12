@@ -18,7 +18,7 @@ import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 
-class PwndbgMapsPanel(private val project: Project): PwndbgTabPanel {
+class MapsPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "maps"
     override val title: String = "Maps"
     override val supportsTextFontSize: Boolean = true

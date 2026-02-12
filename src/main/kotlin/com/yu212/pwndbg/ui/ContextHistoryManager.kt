@@ -8,7 +8,7 @@ import com.yu212.pwndbg.settings.PwndbgSettingsService
 import java.util.*
 
 @Service(Service.Level.PROJECT)
-class PwndbgContextHistoryManager(private val project: Project) {
+class ContextHistoryManager(private val project: Project) {
     data class HistoryEntry(
         val contextText: String,
         val contextError: Boolean,

@@ -59,7 +59,7 @@ class PwndbgService(private val project: Project): Disposable {
                 currentBridge?.dispose()
                 currentBridge = bridge
                 commandPanel?.clearOutput()
-                project.getService(com.yu212.pwndbg.ui.PwndbgContextHistoryManager::class.java).clearHistory()
+                project.getService(com.yu212.pwndbg.ui.ContextHistoryManager::class.java).clearHistory()
                 ApplicationManager.getApplication().invokeLater {
                     manager.showAllWindows()
                 }

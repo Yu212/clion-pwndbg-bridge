@@ -19,7 +19,7 @@ import java.awt.event.KeyEvent
 import java.awt.event.MouseEvent
 import javax.swing.*
 
-class PwndbgBreakpointsPanel(private val project: Project): PwndbgTabPanel {
+class BreakpointsPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "breakpoints"
     override val title: String = "Breakpoints"
     private val model = DefaultListModel<BreakpointEntry>()

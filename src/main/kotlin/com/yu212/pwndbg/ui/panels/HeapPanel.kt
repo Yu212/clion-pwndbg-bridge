@@ -5,7 +5,7 @@ import com.yu212.pwndbg.ui.HeapAnsiTextViewer
 import com.yu212.pwndbg.ui.PwndbgTabPanel
 import javax.swing.JComponent
 
-class PwndbgHeapPanel(project: Project): PwndbgTabPanel {
+class HeapPanel(project: Project): PwndbgTabPanel {
     override val id: String = "heap"
     override val title: String = "Heap"
     override val supportsTextFontSize: Boolean = true

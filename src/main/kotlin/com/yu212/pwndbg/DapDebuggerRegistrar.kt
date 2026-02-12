@@ -5,8 +5,8 @@ import com.intellij.clion.toolchains.debugger.CLionDapDebuggersStorage
 import com.intellij.clion.toolchains.debugger.createDebugger
 import com.intellij.openapi.diagnostic.Logger
 
-object PwndbgDapDebuggerRegistrar {
-    private val log = Logger.getInstance(PwndbgDapDebuggerRegistrar::class.java)
+object DapDebuggerRegistrar {
+    private val log = Logger.getInstance(DapDebuggerRegistrar::class.java)
 
     const val DEFAULT_NAME = "Pwndbg GDB (DAP)"
     private const val DEFAULT_EXECUTABLE = "/usr/bin/gdb"

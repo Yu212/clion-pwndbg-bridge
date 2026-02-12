@@ -21,12 +21,12 @@
 
     <actions>
         <group id="PwndbgTabMoveGroup"
-               class="com.yu212.pwndbg.ui.PwndbgMoveTabActionGroup"
+               class="com.yu212.pwndbg.ui.actions.MoveTabActionGroup"
                popup="true">
             <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
         </group>
         <group id="PwndbgTabFontSizeGroup"
-               class="com.yu212.pwndbg.ui.PwndbgTabFontSizeActionGroup"
+               class="com.yu212.pwndbg.ui.actions.TabFontSizeActionGroup"
                popup="true">
             <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
         </group>

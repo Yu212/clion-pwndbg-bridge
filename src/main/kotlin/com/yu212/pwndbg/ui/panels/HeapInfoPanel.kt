@@ -11,7 +11,7 @@ import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 
-class PwndbgHeapInfoPanel(project: Project): PwndbgTabPanel {
+class HeapInfoPanel(project: Project): PwndbgTabPanel {
     override val id: String = "heap-info"
     override val title: String = "Heap Info"
     override val supportsTextFontSize: Boolean = true
