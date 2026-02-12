@@ -68,9 +68,21 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
         }
     }
 
-    fun showPrimaryWindow() {
-        val target = tabToWindowId["command"] ?: windowTabsById.keys.firstOrNull() ?: return
-        toolWindowManager.getToolWindow(target)?.show()
+    fun showAllWindows() {
+        val openedSlots = mutableSetOf<Pair<ToolWindowAnchor, Boolean>>()
+        for (windowId in windowTabsById.keys) {
+            val toolWindow = toolWindowManager.getToolWindow(windowId) ?: continue
+            if (toolWindow.isVisible) {
+                openedSlots.add(toolWindow.anchor to toolWindow.isSplitMode)
+            }
+        }
+        for (windowId in windowTabsById.keys) {
+            val toolWindow = toolWindowManager.getToolWindow(windowId) ?: continue
+            println(toolWindow.anchor to toolWindow.isSplitMode)
+            if (openedSlots.add(toolWindow.anchor to toolWindow.isSplitMode)) {
+                toolWindow.show()
+            }
+        }
     }
 
     fun moveTabToWindow(tabId: String, targetWindowId: String?) {
