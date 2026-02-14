@@ -1,4 +1,4 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.components
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
@@ -96,7 +96,11 @@ class CollapsibleSection(
     }
 
     fun setText(text: String, isError: Boolean) {
-        viewer.setText(text, isError) {
+        setSegments(AnsiTextViewer.decodeAnsi(text, isError))
+    }
+
+    fun setSegments(segments: List<AnsiTextViewer.AnsiSegment>) {
+        viewer.setSegments(segments) {
             updateSizeHints()
             revalidate()
             repaint()

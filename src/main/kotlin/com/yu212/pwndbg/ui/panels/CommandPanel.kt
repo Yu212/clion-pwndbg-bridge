@@ -12,8 +12,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
-import com.yu212.pwndbg.ui.CommandHistoryField
-import com.yu212.pwndbg.ui.PwndbgTabPanel
+import com.yu212.pwndbg.ui.components.CommandHistoryField
+import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.GridLayout
 import java.awt.event.ActionEvent
@@ -24,6 +24,7 @@ class CommandPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "command"
     override val title: String = "Command"
     override val supportsTextFontSize: Boolean = true
+
     private val consoleView = ConsoleViewImpl(project, true)
     private val ansiDecoder = AnsiEscapeDecoder()
     private val inputField = CommandHistoryField()

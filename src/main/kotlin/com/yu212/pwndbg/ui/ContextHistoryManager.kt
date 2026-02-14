@@ -5,21 +5,20 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.yu212.pwndbg.PwndbgService
 import com.yu212.pwndbg.settings.PwndbgSettingsService
+import com.yu212.pwndbg.ui.components.AnsiTextViewer
+import com.yu212.pwndbg.ui.heap.HeapChunkModel
+import com.yu212.pwndbg.ui.heap.HeapChunkParser
 import java.util.*
 
 @Service(Service.Level.PROJECT)
 class ContextHistoryManager(private val project: Project) {
     data class HistoryEntry(
-        val contextText: String,
-        val contextError: Boolean,
-        val heapText: String,
-        val heapError: Boolean,
-        val arenasText: String,
-        val arenasError: Boolean,
-        val heapInfoText: String,
-        val heapInfoError: Boolean,
-        val binsText: String,
-        val binsError: Boolean
+        val contextSegments: List<AnsiTextViewer.AnsiSegment>,
+        val heapSegments: List<AnsiTextViewer.AnsiSegment>,
+        val heapChunks: List<HeapChunkModel>?,
+        val arenasSegments: List<AnsiTextViewer.AnsiSegment>,
+        val heapInfoSegments: List<AnsiTextViewer.AnsiSegment>,
+        val binsSegments: List<AnsiTextViewer.AnsiSegment>
     )
 
     private val history = ArrayList<HistoryEntry>()
@@ -46,6 +45,8 @@ class ContextHistoryManager(private val project: Project) {
     fun getLatestIndex(): Int? = if (history.isEmpty()) null else droppedCount + history.lastIndex
 
     fun getEarliestIndex(): Int? = if (history.isEmpty()) null else droppedCount
+
+    fun atLatest(): Boolean = currentIndex == getLatestIndex()
 
     fun hasHistory(): Boolean = history.isNotEmpty()
 
@@ -78,32 +79,24 @@ class ContextHistoryManager(private val project: Project) {
 
     fun refresh(callback: (HistoryEntry) -> Unit) {
         service.executeCommandCapture("context") { contextResult, contextError ->
-            val contextIsError = contextResult.isNullOrBlank() || !contextError.isNullOrBlank()
-            val contextText = if (!contextIsError) contextResult else "context command failed: $contextError\n"
+            val contextSegments = AnsiTextViewer.decodeCommandOutput("context", contextResult, contextError)
             service.executeCommandCapture("vis-heap-chunks") { heapResult, heapError ->
-                val heapIsError = heapResult.isNullOrBlank() || !heapError.isNullOrBlank()
-                val heapText = if (!heapIsError) heapResult else "vis-heap-chunks command failed: $heapError\n"
+                val heapSegments = AnsiTextViewer.decodeCommandOutput("vis-heap-chunks", stripHeapWarningPrefix(heapResult), heapError)
+                val heapChunks = HeapChunkParser.parse(heapSegments)
                 service.executeCommandCapture("arenas") { arenasResult, arenasError ->
-                    val arenasIsError = arenasResult.isNullOrBlank() || !arenasError.isNullOrBlank()
-                    val arenasText = if (!arenasIsError) arenasResult else "arenas command failed: $arenasError\n"
+                    val arenasSegments = AnsiTextViewer.decodeCommandOutput("arenas", arenasResult, arenasError)
                     service.executeCommandCapture("heap") { heapInfoResult, heapInfoError ->
-                        val heapInfoIsError = heapInfoResult.isNullOrBlank() || !heapInfoError.isNullOrBlank()
-                        val heapInfoText = if (!heapInfoIsError) heapInfoResult else "heap command failed: $heapInfoError\n"
+                        val heapInfoSegments = AnsiTextViewer.decodeCommandOutput("heap", heapInfoResult, heapInfoError)
                         service.executeCommandCapture("bins") { binsResult, binsError ->
-                            val binsIsError = binsResult.isNullOrBlank() || !binsError.isNullOrBlank()
-                            val binsText = if (!binsIsError) binsResult else "bins command failed: $binsError\n"
+                            val binsSegments = AnsiTextViewer.decodeCommandOutput("bins", binsResult, binsError)
                             callback(
                                 HistoryEntry(
-                                    contextText,
-                                    contextIsError,
-                                    heapText,
-                                    heapIsError,
-                                    arenasText,
-                                    arenasIsError,
-                                    heapInfoText,
-                                    heapInfoIsError,
-                                    binsText,
-                                    binsIsError
+                                    contextSegments,
+                                    heapSegments,
+                                    heapChunks,
+                                    arenasSegments,
+                                    heapInfoSegments,
+                                    binsSegments
                                 )
                             )
                         }
@@ -111,6 +104,11 @@ class ContextHistoryManager(private val project: Project) {
                 }
             }
         }
+    }
+
+    private fun stripHeapWarningPrefix(text: String?): String? {
+        val heapWarn = "\u001b[33mpwndbg will try to resolve the heap symbols via heuristic now since we cannot resolve the heap via the debug symbols.\nThis might not work in all cases. Use `help set resolve-heap-via-heuristic` for more details.\n\u001b[0m\n"
+        return text?.removePrefix(heapWarn)?.trimStart('\n', '\r')
     }
 
     fun showIndex(index: Int) {
@@ -152,18 +150,18 @@ class ContextHistoryManager(private val project: Project) {
             val heapPanel = toolWindowManager.heapPanel
             val heapInfoPanel = toolWindowManager.heapInfoPanel
             if (currentIndex == null) {
-                contextPanel?.setContextText("", isError = false)
-                heapPanel?.setHeapText("", isError = false)
-                heapInfoPanel?.setArenasText("", isError = false)
-                heapInfoPanel?.setHeapText("", isError = false)
-                heapInfoPanel?.setBinsText("", isError = false)
+                contextPanel?.setContextSegments(emptyList())
+                heapPanel?.setHeapContent(emptyList(), null)
+                heapInfoPanel?.setArenasSegments(emptyList())
+                heapInfoPanel?.setHeapSegments(emptyList())
+                heapInfoPanel?.setBinsSegments(emptyList())
             } else {
                 val entry = history[currentIndex!! - droppedCount]
-                contextPanel?.setContextText(entry.contextText, entry.contextError)
-                heapPanel?.setHeapText(entry.heapText, entry.heapError)
-                heapInfoPanel?.setArenasText(entry.arenasText, entry.arenasError)
-                heapInfoPanel?.setHeapText(entry.heapInfoText, entry.heapInfoError)
-                heapInfoPanel?.setBinsText(entry.binsText, entry.binsError)
+                contextPanel?.setContextSegments(entry.contextSegments)
+                heapPanel?.setHeapContent(entry.heapSegments, entry.heapChunks)
+                heapInfoPanel?.setArenasSegments(entry.arenasSegments)
+                heapInfoPanel?.setHeapSegments(entry.heapInfoSegments)
+                heapInfoPanel?.setBinsSegments(entry.binsSegments)
             }
             contextPanel?.updateHistoryState()
         }

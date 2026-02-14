@@ -8,9 +8,9 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
-import com.yu212.pwndbg.ui.AnsiTextViewer
 import com.yu212.pwndbg.ui.ContextHistoryManager
-import com.yu212.pwndbg.ui.PwndbgTabPanel
+import com.yu212.pwndbg.ui.components.AnsiTextViewer
+import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Font
 import java.util.*
@@ -27,7 +27,6 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
         project,
         verticalScrollBarPolicy = ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
     )
-    private var lastText: String? = null
     private val historyManager: ContextHistoryManager
         get() = project.getService(ContextHistoryManager::class.java)
 
@@ -69,10 +68,8 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
         rootPanel.repaint()
     }
 
-    fun setContextText(text: String, isError: Boolean) {
-        if (text == lastText) return
-        lastText = text
-        viewer.setText(text, isError, preserveView = true)
+    fun setContextSegments(segments: List<AnsiTextViewer.AnsiSegment>) {
+        viewer.setSegments(segments, preserveView = true)
     }
 
     private fun navigateTo(index: Int) {

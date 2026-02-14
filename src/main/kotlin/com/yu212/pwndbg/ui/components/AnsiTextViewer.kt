@@ -1,4 +1,4 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.components
 
 import com.intellij.execution.process.AnsiEscapeDecoder
 import com.intellij.execution.process.ProcessOutputTypes
@@ -13,6 +13,7 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import java.awt.Dimension
 import javax.swing.JComponent
 import javax.swing.ScrollPaneConstants
@@ -22,10 +23,40 @@ open class AnsiTextViewer(
     private val adjustHeight: Boolean = false,
     private val verticalScrollBarPolicy: Int = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
 ): Disposable {
+    data class AnsiSegment(
+        val text: String,
+        val attributes: Key<*>
+    )
+
+    companion object {
+        fun decodeAnsi(text: String, isError: Boolean): List<AnsiSegment> {
+            val baseType = if (isError) ProcessOutputTypes.STDERR else ProcessOutputTypes.STDOUT
+            val decoder = AnsiEscapeDecoder()
+            val segments = ArrayList<AnsiSegment>()
+            decoder.escapeText(text, baseType) { chunk, attrs ->
+                if (chunk.isNotEmpty()) {
+                    segments.add(AnsiSegment(chunk, attrs))
+                }
+            }
+            return segments
+        }
+
+        fun decodeCommandOutput(
+            commandName: String,
+            stdout: String?,
+            stderr: String?
+        ): List<AnsiSegment> {
+            return if (stdout.isNullOrBlank() || !stderr.isNullOrBlank()) {
+                decodeAnsi("$commandName command failed: $stderr\n", true)
+            } else {
+                decodeAnsi(stdout, false)
+            }
+        }
+    }
+
     protected val document = EditorFactory.getInstance().createDocument("")
     protected val editor: Editor = EditorFactory.getInstance().createViewer(document, project)
     val component: JComponent = editor.component
-    private val ansiDecoder = AnsiEscapeDecoder()
     private val baseScheme = editor.colorsScheme
     private var fontSizeOverride: Int? = null
 
@@ -45,18 +76,20 @@ open class AnsiTextViewer(
         }
     }
 
-    fun setText(text: String, isError: Boolean, preserveView: Boolean = false, onUiUpdated: (() -> Unit)? = null) {
-        val segments = decodeAnsi(text, isError)
+    fun setSegments(
+        segments: List<AnsiSegment>,
+        preserveView: Boolean = false,
+        onUiUpdated: (() -> Unit)? = null
+    ) {
         val app = ApplicationManager.getApplication()
         app.invokeLater {
-            val scrollOffset = if (preserveView) editor.scrollingModel.verticalScrollOffset else 0
-            val caretOffset = if (preserveView) editor.caretModel.offset else 0
             app.runWriteAction {
                 applySegments(segments)
             }
             if (preserveView) {
-                val clamped = caretOffset.coerceAtMost(document.textLength)
-                editor.caretModel.moveToOffset(clamped)
+                val scrollOffset = editor.scrollingModel.verticalScrollOffset
+                val clampedCaretOffset = editor.caretModel.offset.coerceAtMost(document.textLength)
+                editor.caretModel.moveToOffset(clampedCaretOffset)
                 editor.scrollingModel.scrollVertically(scrollOffset)
             }
             updatePreferredHeight()
@@ -79,21 +112,9 @@ open class AnsiTextViewer(
         EditorFactory.getInstance().releaseEditor(editor)
     }
 
-    private fun decodeAnsi(text: String, isError: Boolean): List<Pair<String, com.intellij.openapi.util.Key<*>>> {
-        val baseType = if (isError) ProcessOutputTypes.STDERR else ProcessOutputTypes.STDOUT
-        val segments = ArrayList<Pair<String, com.intellij.openapi.util.Key<*>>>()
-        ansiDecoder.escapeText(text, baseType) { chunk, attrs ->
-            if (chunk.isNotEmpty()) {
-                segments.add(chunk to attrs)
-            }
-        }
-        return segments
-    }
-
-    protected open fun applySegments(segments: List<Pair<String, com.intellij.openapi.util.Key<*>>>) {
-        document.setText(segments.joinToString(separator = "") { it.first })
+    protected open fun applySegments(segments: List<AnsiSegment>) {
+        document.setText(segments.joinToString(separator = "") { it.text })
         editor.markupModel.removeAllHighlighters()
-
         var offset = 0
         for ((chunk, attrs) in segments) {
             val start = offset

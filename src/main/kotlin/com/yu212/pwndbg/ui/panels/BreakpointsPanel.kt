@@ -11,7 +11,7 @@ import com.intellij.util.ui.JBUI
 import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.breakpoints.*
 import com.yu212.pwndbg.PwndbgService
-import com.yu212.pwndbg.ui.PwndbgTabPanel
+import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Font
@@ -22,6 +22,7 @@ import javax.swing.*
 class BreakpointsPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "breakpoints"
     override val title: String = "Breakpoints"
+
     private val model = DefaultListModel<BreakpointEntry>()
     private val list = object: JBList<BreakpointEntry>(model) {
         override fun processMouseEvent(e: MouseEvent) {

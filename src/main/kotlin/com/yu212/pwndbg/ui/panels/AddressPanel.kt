@@ -7,9 +7,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
-import com.yu212.pwndbg.ui.CollapsibleSection
-import com.yu212.pwndbg.ui.CommandHistoryField
-import com.yu212.pwndbg.ui.PwndbgTabPanel
+import com.yu212.pwndbg.ui.components.CollapsibleSection
+import com.yu212.pwndbg.ui.components.CommandHistoryField
+import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
@@ -19,6 +19,7 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "address"
     override val title: String = "Address"
     override val supportsTextFontSize: Boolean = true
+
     private val addressField = CommandHistoryField()
     private val xFormatField = CommandHistoryField("16gx")
     private val runButton = JButton("Inspect")

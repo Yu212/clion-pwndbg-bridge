@@ -70,6 +70,7 @@ class PwndbgService(private val project: Project): Disposable {
                 log.info("Pwndbg: debug session stopped: ${debugProcess.session.sessionName}")
                 currentBridge?.dispose()
                 currentBridge = null
+                toolWindowManager.removeTemporaryTabs()
                 stopSocat()
                 val breakpointsPanel = toolWindowManager.breakpointsPanel
                 breakpointsPanel?.refreshAll()

@@ -10,8 +10,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
-import com.yu212.pwndbg.ui.CollapsibleSection
-import com.yu212.pwndbg.ui.PwndbgTabPanel
+import com.yu212.pwndbg.ui.components.CollapsibleSection
+import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
 import javax.swing.BoxLayout
 import javax.swing.JComponent
@@ -22,6 +22,7 @@ class MapsPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "maps"
     override val title: String = "Maps"
     override val supportsTextFontSize: Boolean = true
+
     private val vmmapView = CollapsibleSection("vmmap", project)
     private val checksecView = CollapsibleSection("checksec", project)
     private val gotView = CollapsibleSection("got", project)

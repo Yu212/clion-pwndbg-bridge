@@ -13,8 +13,10 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowAnchor
 import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.openapi.wm.impl.content.ToolWindowContentUi
+import com.intellij.toolWindow.InternalDecoratorImpl
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
+import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import com.yu212.pwndbg.ui.panels.*
 
 @Service(Service.Level.PROJECT)
@@ -24,6 +26,14 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
     data class State(
         var windows: MutableList<WindowState> = mutableListOf(),
         var tabFontSizes: MutableMap<String, Int> = mutableMapOf()
+    )
+
+    private data class TabBinding(
+        val tabId: String,
+        val temporary: Boolean,
+        var panel: PwndbgTabPanel,
+        var content: Content? = null,
+        var windowId: String? = null
     )
 
     private var state = State()
@@ -47,15 +57,11 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
     var heapInfoPanel: HeapInfoPanel? = null
         private set
 
-    private var panelsList: List<PwndbgTabPanel> = emptyList()
-    private var panelsById: Map<String, PwndbgTabPanel> = emptyMap()
-
-    private val contentByTabId = LinkedHashMap<String, Content>()
+    private val bindingsByTabId = LinkedHashMap<String, TabBinding>()
     private val tabIdByContent = LinkedHashMap<Content, String>()
-    private val tabToWindowId = LinkedHashMap<String, String>()
     private val windowTabsById = LinkedHashMap<String, MutableList<String>>()
 
-    override fun getState(): State = if (initialized && panelsList.isNotEmpty()) buildStateFromLayout() else state
+    override fun getState(): State = if (initialized && bindingsByTabId.isNotEmpty()) buildStateFromLayout() else state
 
     override fun loadState(state: State) {
         this.state = state
@@ -70,144 +76,258 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
     }
 
     fun showAllWindows() {
-        val openedSlots = mutableSetOf<Pair<ToolWindowAnchor, Boolean>>()
-        for (windowId in windowTabsById.keys) {
-            val toolWindow = toolWindowManager.getToolWindow(windowId) ?: continue
-            if (toolWindow.isVisible) {
-                openedSlots.add(toolWindow.anchor to toolWindow.isSplitMode)
-            }
-        }
-        for (windowId in windowTabsById.keys) {
-            val toolWindow = toolWindowManager.getToolWindow(windowId) ?: continue
-            if (openedSlots.add(toolWindow.anchor to toolWindow.isSplitMode)) {
-                toolWindow.show()
-            }
+        windowTabsById.keys.mapNotNull { toolWindowManager.getToolWindow(it) }.distinct().forEach { toolWindow ->
+            toolWindow.show()
         }
     }
 
     fun moveTabToWindow(tabId: String, targetWindowId: String?) {
-        val content = contentByTabId[tabId] ?: return
-        val sourceWindowId = tabToWindowId[tabId] ?: return
-        val sourceToolWindow = toolWindowManager.getToolWindow(sourceWindowId) ?: return
+        val binding = bindingsByTabId[tabId] ?: return
+        val content = binding.content ?: return
+        val sourceWindow = findWindowByTabId(tabId) ?: return
         val destinationId = targetWindowId ?: createWindowId()
-        val destinationToolWindow = getOrCreateToolWindow(destinationId)
-        if (destinationToolWindow.contentManager.getIndexOfContent(content) >= 0) return
-
-        sourceToolWindow.contentManager.removeContent(content, false)
-        destinationToolWindow.contentManager.addContent(content)
-        getTabTitle(tabId)?.let { title ->
-            content.displayName = title
-            content.tabName = title
-        }
-
-        windowTabsById[sourceWindowId]?.remove(tabId)
-        windowTabsById.getOrPut(destinationId) { mutableListOf() }.add(tabId)
-        tabToWindowId[tabId] = destinationId
-
-        if (windowTabsById[sourceWindowId].isNullOrEmpty()) {
-            removeToolWindow(sourceWindowId)
-        }
+        if (sourceWindow.id == destinationId) return
+        val destination = toolWindowManager.getToolWindow(destinationId) ?: createToolWindow(destinationId)
+        tabIdByContent.remove(content)
+        content.manager?.removeContent(content, true)
+        removeTabFromWindow(sourceWindow.id, tabId)
+        createContentOnWindow(binding, destination)
+        destination.show()
     }
 
     fun getTabTextFontSize(tabId: String): Int? = state.tabFontSizes[tabId]
 
-    fun isTextFontSizeSupported(tabId: String): Boolean = panelsById[tabId]?.supportsTextFontSize == true
+    fun isTextFontSizeSupported(tabId: String): Boolean {
+        val binding = bindingsByTabId[tabId] ?: return false
+        return binding.panel.supportsTextFontSize
+    }
 
     fun setTabTextFontSize(tabId: String, size: Int?) {
-        val panel = panelsById[tabId] ?: return
-        if (!panel.supportsTextFontSize) return
+        val binding = bindingsByTabId[tabId] ?: return
         if (size == null) {
             state.tabFontSizes.remove(tabId)
         } else {
             state.tabFontSizes[tabId] = size
         }
+        val panel = binding.panel
+        if (!panel.supportsTextFontSize) return
         panel.setTextFontSize(size)
     }
 
+    @Suppress("UNCHECKED_CAST")
+    fun <T: PwndbgTabPanel> getOrCreateTemporaryPanel(tabId: String, panelFactory: () -> T): T {
+        val existing = bindingsByTabId[tabId]
+        if (existing != null) {
+            require(existing.temporary) { "Tab '$tabId' is not temporary." }
+            return existing.panel as T
+        }
+        val panel = panelFactory()
+        val binding = TabBinding(tabId = tabId, temporary = true, panel = panel)
+        bindingsByTabId[tabId] = binding
+        Disposer.register(this, panel)
+        if (panel.supportsTextFontSize) {
+            panel.setTextFontSize(state.tabFontSizes[binding.tabId])
+        }
+        return panel
+    }
+
+    fun showTemporaryTab(
+        tabId: String,
+        hostTabId: String,
+        splitDirection: Int
+    ) {
+        val binding = bindingsByTabId[tabId] ?: return
+        if (!binding.temporary) return
+
+        val attachedWindow = findWindowByTabId(binding.tabId)
+        if (attachedWindow != null) {
+            attachedWindow.show()
+            return
+        }
+
+        val hostWindow = findWindowByTabId(hostTabId) ?: return
+        val selectedBeforeSplit = hostWindow.contentManager.selectedContent
+        val content = createContentOnWindow(binding, hostWindow)
+
+        val decorator = InternalDecoratorImpl.findNearestDecorator(hostWindow.component)
+        decorator?.splitWithContent(content, splitDirection, -1)
+
+        if (selectedBeforeSplit != null) {
+            hostWindow.contentManager.setSelectedContent(selectedBeforeSplit, true, true)
+        }
+        hostWindow.show()
+    }
+
     private fun initializeToolWindows() {
-        createPanels()
+        registerBindings()
         normalizeState()
 
-        for (panel in panelsList) {
-            if (!panel.supportsTextFontSize) continue
-            val size = state.tabFontSizes[panel.id]
-            panel.setTextFontSize(size)
+        for (binding in bindingsByTabId.values) {
+            if (binding.temporary) continue
+            if (binding.panel.supportsTextFontSize) {
+                binding.panel.setTextFontSize(state.tabFontSizes[binding.tabId])
+            }
         }
         for (window in state.windows) {
-            windowTabsById[window.id] = window.tabs.toMutableList()
-            val toolWindow = getOrCreateToolWindow(window.id)
+            val toolWindow = createToolWindow(window.id)
             for (tabId in window.tabs) {
-                addTabToWindow(tabId, toolWindow)
+                val binding = bindingsByTabId[tabId] ?: continue
+                createContentOnWindow(binding, toolWindow)
             }
         }
     }
 
-    private fun addTabToWindow(tabId: String, toolWindow: ToolWindow) {
-        val content = getOrCreateContent(tabId)
-        if (toolWindow.contentManager.getIndexOfContent(content) >= 0) return
-        toolWindow.contentManager.addContent(content)
-        tabToWindowId[tabId] = toolWindow.id
+    private fun registerBindings() {
+        ApplicationManager.getApplication().assertIsDispatchThread()
+
+        registerStaticTab(CommandPanel(project).also { commandPanel = it })
+        registerStaticTab(ContextPanel(project).also { contextPanel = it })
+        registerStaticTab(BreakpointsPanel(project).also { breakpointsPanel = it })
+        registerStaticTab(AddressPanel(project).also { addressPanel = it })
+        registerStaticTab(MapsPanel(project).also { mapsPanel = it })
+        registerStaticTab(HeapPanel(project).also { heapPanel = it })
+        registerStaticTab(HeapInfoPanel(project).also { heapInfoPanel = it })
     }
 
-    private fun getOrCreateContent(tabId: String): Content {
-        return contentByTabId.getOrPut(tabId) {
-            val panel = requirePanel(tabId)
-            val content = contentFactory.createContent(panel.component, panel.title, false)
-            content.isCloseable = false
-            content.displayName = panel.title
-            content.tabName = panel.title
-            tabIdByContent[content] = tabId
-            content
-        }
+    private fun registerStaticTab(panel: PwndbgTabPanel) {
+        val binding = TabBinding(
+            tabId = panel.id,
+            temporary = false,
+            panel = panel
+        )
+        bindingsByTabId[panel.id] = binding
+        Disposer.register(this, panel)
     }
 
     private fun normalizeState() {
-        val allTabs = getAllTabIds()
+        val staticTabIds = bindingsByTabId.values.filter { !it.temporary }.map { it.tabId }
+        val staticSet = staticTabIds.toSet()
+
         val seen = LinkedHashSet<String>()
         val normalizedWindows = mutableListOf<WindowState>()
         val usedIds = LinkedHashSet<String>()
         var nextIndex = 1
-        val validTabs = allTabs.toSet()
 
         for (window in state.windows) {
             val cleaned = mutableListOf<String>()
             for (tabId in window.tabs) {
-                if (getTabTitle(tabId) == null) continue
+                if (tabId !in staticSet) continue
                 if (!seen.add(tabId)) continue
                 cleaned.add(tabId)
             }
-            if (cleaned.isNotEmpty()) {
-                var normalizedId = window.id
-                while (!usedIds.add(normalizedId)) {
-                    normalizedId = windowId(nextIndex++)
-                }
-                normalizedWindows.add(WindowState(normalizedId, cleaned))
+            if (cleaned.isEmpty()) continue
+
+            var normalizedId = window.id
+            while (!usedIds.add(normalizedId)) {
+                normalizedId = windowId(nextIndex++)
             }
+            normalizedWindows.add(WindowState(normalizedId, cleaned))
         }
 
         if (normalizedWindows.isEmpty()) {
-            normalizedWindows.add(WindowState(windowId(1), allTabs.toMutableList()))
+            normalizedWindows.add(WindowState(windowId(1), staticTabIds.toMutableList()))
         } else {
-            val first = normalizedWindows.first().tabs
-            for (tabId in allTabs) {
+            val firstTabs = normalizedWindows.first().tabs
+            for (tabId in staticTabIds) {
                 if (seen.add(tabId)) {
-                    first.add(tabId)
+                    firstTabs.add(tabId)
                 }
             }
         }
 
         state.windows = normalizedWindows.toMutableList()
-        state.tabFontSizes = state.tabFontSizes.filterKeys { it in validTabs }.toMutableMap()
+        state.tabFontSizes = state.tabFontSizes.filterKeys { it in staticSet }.toMutableMap()
     }
 
-    private fun getOrCreateToolWindow(windowId: String): ToolWindow {
-        val existing = toolWindowManager.getToolWindow(windowId)
-        if (existing != null) return existing
-        val task = RegisterToolWindowTask(id = windowId, anchor = ToolWindowAnchor.RIGHT, canCloseContent = false)
+    private fun createToolWindow(windowId: String): ToolWindow {
+        require(toolWindowManager.getToolWindow(windowId) == null) { "Tool window with id '$windowId' already exists." }
+        val task = RegisterToolWindowTask(id = windowId, anchor = ToolWindowAnchor.RIGHT, canCloseContent = true)
         val toolWindow = toolWindowManager.registerToolWindow(task)
         toolWindow.stripeTitle = "Pwndbg"
         ToolWindowContentUi.setAllowTabsReordering(toolWindow, true)
         return toolWindow
+    }
+
+    private fun buildStateFromLayout(): State {
+        val windows = mutableListOf<WindowState>()
+        for ((windowId, tabs) in windowTabsById) {
+            val persisted = tabs.filter { tabId -> bindingsByTabId[tabId]?.temporary != true }.toMutableList()
+            if (persisted.isEmpty()) continue
+            windows.add(WindowState(windowId, persisted))
+        }
+        val staticSet = bindingsByTabId.values.filter { !it.temporary }.map { it.tabId }.toSet()
+        return State(
+            windows = windows,
+            tabFontSizes = state.tabFontSizes.filterKeys { it in staticSet }.toMutableMap()
+        )
+    }
+
+    fun getTabId(content: Content): String? = tabIdByContent[content]
+
+    fun getWindowIds(): List<String> = windowTabsById.keys.toList()
+
+    fun getWindowLabel(windowId: String): String {
+        val titles = windowTabsById[windowId].orEmpty().mapNotNull { tabId ->
+            bindingsByTabId[tabId]?.panel?.title
+        }
+        return if (titles.isEmpty()) "Empty Window" else titles.joinToString(", ")
+    }
+
+    private fun findWindowByTabId(tabId: String): ToolWindow? {
+        val binding = bindingsByTabId[tabId] ?: return null
+        return binding.windowId?.let { toolWindowManager.getToolWindow(it) }
+    }
+
+    private fun createContentOnWindow(binding: TabBinding, toolWindow: ToolWindow): Content {
+        val panel = binding.panel
+        val content = contentFactory.createContent(panel.component, panel.title, false)
+        content.setDisposer {
+            ApplicationManager.getApplication().invokeLater {
+                val current = bindingsByTabId[binding.tabId] ?: return@invokeLater
+                if (current.content === content) {
+                    tabIdByContent.remove(content)
+                    current.content = null
+                    val oldWindowId = current.windowId
+                    if (oldWindowId != null) {
+                        removeTabFromWindow(oldWindowId, current.tabId)
+                    }
+                    current.windowId = null
+                }
+            }
+        }
+        content.isCloseable = binding.temporary
+        content.displayName = panel.title
+        content.tabName = panel.title
+        binding.content = content
+        tabIdByContent[content] = binding.tabId
+        toolWindow.contentManager.addContent(content)
+        binding.windowId = toolWindow.id
+        addTabToWindow(toolWindow.id, binding.tabId)
+        return content
+    }
+
+    fun removeTemporaryTabs() {
+        ApplicationManager.getApplication().invokeLater {
+            val tempBindings = bindingsByTabId.values.filter { it.temporary }.toList()
+            for (binding in tempBindings) {
+                val content = binding.content ?: continue
+                content.manager?.removeContent(content, true)
+            }
+        }
+    }
+
+    private fun addTabToWindow(windowId: String, tabId: String) {
+        windowTabsById.getOrPut(windowId) { mutableListOf() }.apply {
+            add(tabId)
+        }
+    }
+
+    private fun removeTabFromWindow(windowId: String, tabId: String) {
+        windowTabsById[windowId]?.remove(tabId)
+        if (windowTabsById[windowId].isNullOrEmpty()) {
+            windowTabsById.remove(windowId)
+            toolWindowManager.unregisterToolWindow(windowId)
+        }
     }
 
     private fun createWindowId(): String {
@@ -216,54 +336,6 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
             index += 1
         }
         return windowId(index)
-    }
-
-    private fun removeToolWindow(windowId: String) {
-        windowTabsById.remove(windowId)
-        toolWindowManager.unregisterToolWindow(windowId)
-    }
-
-    private fun buildStateFromLayout(): State {
-        val windows = mutableListOf<WindowState>()
-        for ((windowId, tabs) in windowTabsById) {
-            val tabList = tabs.toMutableList()
-            if (tabList.isEmpty()) continue
-            windows.add(WindowState(windowId, tabList))
-        }
-        return State(windows, state.tabFontSizes.toMutableMap())
-    }
-
-    fun getTabId(content: Content): String? = tabIdByContent[content]
-
-    fun getWindowIds(): List<String> = windowTabsById.keys.toList()
-
-    fun getWindowLabel(windowId: String): String {
-        val tabs = windowTabsById[windowId].orEmpty()
-        val titles = tabs.mapNotNull { getTabTitle(it) }
-        return if (titles.isEmpty()) "Empty Window" else titles.joinToString(", ")
-    }
-
-    private fun createPanels() {
-        ApplicationManager.getApplication().assertIsDispatchThread()
-        panelsList = listOf(
-            CommandPanel(project).also { commandPanel = it },
-            ContextPanel(project).also { contextPanel = it },
-            BreakpointsPanel(project).also { breakpointsPanel = it },
-            AddressPanel(project).also { addressPanel = it },
-            MapsPanel(project).also { mapsPanel = it },
-            HeapPanel(project).also { heapPanel = it },
-            HeapInfoPanel(project).also { heapInfoPanel = it }
-        )
-        panelsById = panelsList.associateBy { it.id }
-        panelsList.forEach { Disposer.register(this, it) }
-    }
-
-    private fun getTabTitle(tabId: String): String? = panelsById[tabId]?.title
-
-    private fun getAllTabIds(): List<String> = panelsList.map { it.id }
-
-    private fun requirePanel(tabId: String): PwndbgTabPanel {
-        return panelsById[tabId] ?: error("Unknown tab id: $tabId")
     }
 
     override fun dispose() {

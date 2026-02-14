@@ -1,4 +1,4 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.components
 
 import com.intellij.openapi.Disposable
 import javax.swing.JComponent

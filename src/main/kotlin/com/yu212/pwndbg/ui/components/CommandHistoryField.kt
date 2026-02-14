@@ -1,9 +1,10 @@
-package com.yu212.pwndbg.ui
+package com.yu212.pwndbg.ui.components
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.ui.components.JBTextField
 import com.yu212.pwndbg.settings.PwndbgSettingsService
+import java.awt.event.ActionEvent
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import javax.swing.AbstractAction
@@ -63,17 +64,17 @@ class CommandHistoryField(
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.ALT_DOWN_MASK), "historyPopup")
 
         actionMap.put("historyUp", object: AbstractAction() {
-            override fun actionPerformed(e: java.awt.event.ActionEvent?) {
+            override fun actionPerformed(e: ActionEvent?) {
                 moveHistory(-1)
             }
         })
         actionMap.put("historyDown", object: AbstractAction() {
-            override fun actionPerformed(e: java.awt.event.ActionEvent?) {
+            override fun actionPerformed(e: ActionEvent?) {
                 moveHistory(1)
             }
         })
         actionMap.put("historyPopup", object: AbstractAction() {
-            override fun actionPerformed(e: java.awt.event.ActionEvent?) {
+            override fun actionPerformed(e: ActionEvent?) {
                 showHistoryPopup()
             }
         })
