@@ -68,11 +68,12 @@ class ContextHistoryManager(private val project: Project) {
             return
         }
         val current = currentIndex ?: return
+        val earliest = getEarliestIndex() ?: return
         val latest = getLatestIndex() ?: return
-        val target = if (direction > 0) {
-            pins.higher(current) ?: latest
+        val target = if (direction < 0) {
+            if (current == earliest) latest else pins.lower(current) ?: earliest
         } else {
-            pins.lower(current) ?: latest
+            if (current == latest) earliest else pins.higher(current) ?: latest
         }
         showIndex(target)
     }

@@ -13,10 +13,13 @@ import com.yu212.pwndbg.ui.components.AnsiTextViewer
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Font
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.util.*
 import javax.swing.*
 import javax.swing.event.ChangeEvent
 import javax.swing.event.ChangeListener
+import kotlin.math.roundToInt
 
 class ContextPanel(private val project: Project): PwndbgTabPanel {
     override val id: String = "context"
@@ -150,6 +153,13 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
                 }
             }
         })
+        timelineSlider.addMouseListener(object: MouseAdapter() {
+            override fun mousePressed(e: MouseEvent) {
+                if (timelineSlider.isEnabled) {
+                    timelineSlider.value = sliderValueForPoint(e.x)
+                }
+            }
+        })
         installPinShortcuts()
         updateNavigationState()
 
@@ -201,8 +211,16 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
         inputMap.put(KeyStroke.getKeyStroke("ctrl M"), "pwndbg.pin.toggle")
         inputMap.put(KeyStroke.getKeyStroke("alt UP"), "pwndbg.pin.prev")
         inputMap.put(KeyStroke.getKeyStroke("alt DOWN"), "pwndbg.pin.next")
+        inputMap.put(KeyStroke.getKeyStroke("alt LEFT"), "pwndbg.pin.prev")
+        inputMap.put(KeyStroke.getKeyStroke("alt RIGHT"), "pwndbg.pin.next")
         inputMap.put(KeyStroke.getKeyStroke("LEFT"), "pwndbg.context.prev")
         inputMap.put(KeyStroke.getKeyStroke("RIGHT"), "pwndbg.context.next")
+        inputMap.put(KeyStroke.getKeyStroke("UP"), "pwndbg.context.prev")
+        inputMap.put(KeyStroke.getKeyStroke("DOWN"), "pwndbg.context.next")
+
+        val sliderInputMap = timelineSlider.getInputMap(JComponent.WHEN_FOCUSED)
+        sliderInputMap.put(KeyStroke.getKeyStroke("UP"), "pwndbg.context.prev")
+        sliderInputMap.put(KeyStroke.getKeyStroke("DOWN"), "pwndbg.context.next")
 
         actionMap.put("pwndbg.pin.toggle", object: AbstractAction() {
             override fun actionPerformed(e: java.awt.event.ActionEvent?) {
@@ -231,6 +249,17 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
                 navigateTo(current + 1)
             }
         })
+    }
+
+    private fun sliderValueForPoint(x: Int): Int {
+        val min = timelineSlider.minimum
+        val max = timelineSlider.maximum
+        val insets = timelineSlider.insets
+        val start = insets.left
+        val end = timelineSlider.width - insets.right
+        val clampedX = x.coerceIn(start, end)
+        val ratio = (clampedX - start).toDouble() / (end - start).toDouble()
+        return (min + (max - min) * ratio).roundToInt()
     }
 
     private fun createActionToolbar(): com.intellij.openapi.actionSystem.ActionToolbar {

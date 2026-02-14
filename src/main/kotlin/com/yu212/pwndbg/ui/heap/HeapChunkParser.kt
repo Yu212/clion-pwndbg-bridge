@@ -16,7 +16,7 @@ object HeapChunkParser {
         }
     }
 
-    fun parse(segments: List<AnsiTextViewer.AnsiSegment>): List<HeapChunkModel> {
+    fun parse(segments: List<AnsiTextViewer.AnsiSegment>): List<HeapChunkModel>? {
         val chunks = mutableListOf<HeapChunkModel>()
         var startQword = 0
         var qword = 0
@@ -31,7 +31,7 @@ object HeapChunkParser {
             val color = type.attributes.foregroundColor
             if (type == ConsoleViewContentType.NORMAL_OUTPUT) {
                 if (lastColor == null) {
-                    currentAddress = chunk.removePrefix("0x").toULong(16)
+                    currentAddress = chunk.removePrefix("0x").toULongOrNull(16) ?: return null
                     startAddress = currentAddress
                 }
             } else if (addressRegex.matches(chunk)) {
