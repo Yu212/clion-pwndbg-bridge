@@ -89,12 +89,9 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
         val xFormat = xFormatField.text.trim().ifEmpty { "16gx" }
         addressField.addHistory(baseAddress)
         xFormatField.addHistory(xFormat)
-
-        telescopeLines = 8
         updateTelescopeTitle()
 
         val service = project.getService(PwndbgService::class.java)
-
         service.executeCommandCapture("xinfo $baseAddress") { output, error ->
             printResult(xinfoView, output, error)
             service.executeCommandCapture("telescope $baseAddress $telescopeLines") { output2, error2 ->
