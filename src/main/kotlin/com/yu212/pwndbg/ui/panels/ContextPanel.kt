@@ -7,8 +7,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.ui.ContextHistoryManager
 import com.yu212.pwndbg.ui.components.AnsiTextViewer
-import com.yu212.pwndbg.ui.components.ToolbarFactory
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
+import com.yu212.pwndbg.ui.components.ToolbarFactory
 import java.awt.BorderLayout
 import java.awt.Font
 import java.awt.event.MouseAdapter
@@ -35,14 +35,14 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
     private val nextButton = JButton(">")
     private val latestButton = JButton(">>")
     private val statusLabel = JLabel("Latest")
-    private val refreshAction = object: AnAction("Refresh Context", "Refresh context", AllIcons.Actions.Refresh) {
+    private val refreshAction = object: AnAction("Refresh Context", null, AllIcons.Actions.Refresh) {
         override fun actionPerformed(e: AnActionEvent) {
             historyManager.refresh { entry ->
                 historyManager.replaceLatestEntry(entry)
             }
         }
     }
-    private val pinAction = object: AnAction("Add Pin", "Add pin", AllIcons.General.Pin) {
+    private val pinAction = object: AnAction("Add Pin", null, AllIcons.General.Pin) {
         override fun actionPerformed(e: AnActionEvent) {
             togglePinAtCurrent()
         }

@@ -8,8 +8,8 @@ import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
 import com.yu212.pwndbg.ui.components.CollapsibleSection
-import com.yu212.pwndbg.ui.components.ToolbarFactory
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
+import com.yu212.pwndbg.ui.components.ToolbarFactory
 import java.awt.BorderLayout
 import javax.swing.BoxLayout
 import javax.swing.JComponent
@@ -27,7 +27,7 @@ class MapsPanel(private val project: Project): PwndbgTabPanel {
     private val pltView = CollapsibleSection("plt", project)
     private val rootPanel = BorderLayoutPanel()
     private val outputPanel = JPanel()
-    private val refreshAction = object: AnAction("Refresh", "Refresh maps", AllIcons.Actions.Refresh) {
+    private val refreshAction = object: AnAction("Refresh", null, AllIcons.Actions.Refresh) {
         override fun actionPerformed(e: AnActionEvent) {
             refreshAll()
         }

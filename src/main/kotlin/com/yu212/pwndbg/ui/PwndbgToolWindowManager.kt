@@ -18,6 +18,7 @@ import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import com.yu212.pwndbg.ui.panels.*
+import com.yu212.pwndbg.ui.panels.address.AddressPanel
 
 @Service(Service.Level.PROJECT)
 @State(name = "PwndbgToolWindowLayout", storages = [Storage("pwndbg-toolwindows.xml")])
