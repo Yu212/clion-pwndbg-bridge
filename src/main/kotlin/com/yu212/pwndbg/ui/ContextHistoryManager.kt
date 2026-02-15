@@ -8,6 +8,7 @@ import com.yu212.pwndbg.settings.PwndbgSettingsService
 import com.yu212.pwndbg.ui.components.AnsiSegment
 import com.yu212.pwndbg.ui.heap.HeapChunkModel
 import com.yu212.pwndbg.ui.heap.HeapChunkParser
+import com.yu212.pwndbg.ui.panels.address.AddressInspectionTimelineStore
 import java.util.*
 
 @Service(Service.Level.PROJECT)
@@ -32,12 +33,16 @@ class ContextHistoryManager(private val project: Project) {
     private val service: PwndbgService
         get() = project.getService(PwndbgService::class.java)
 
+    private val addressInspectionTimelineStore: AddressInspectionTimelineStore
+        get() = project.getService(AddressInspectionTimelineStore::class.java)
+
     fun clearHistory() {
         history.clear()
         droppedCount = 0
         currentIndex = null
         pins.clear()
         updatePanels()
+        addressInspectionTimelineStore.clear()
     }
 
     fun getCurrentIndex(): Int? = currentIndex
@@ -135,6 +140,7 @@ class ContextHistoryManager(private val project: Project) {
         history.add(entry)
         currentIndex = droppedCount + history.lastIndex
         updatePanels()
+        addressInspectionTimelineStore.onHistoryRangeChanged(getEarliestIndex(), getLatestIndex())
     }
 
     private fun updatePanels() {
@@ -158,6 +164,7 @@ class ContextHistoryManager(private val project: Project) {
                 heapInfoPanel?.setBinsSegments(entry.binsSegments)
             }
             contextPanel?.updateHistoryState()
+            addressInspectionTimelineStore.onContextIndexChanged(currentIndex)
         }
     }
 }

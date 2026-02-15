@@ -1,16 +1,11 @@
 package com.yu212.pwndbg.ui.panels.address
 
-import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.ui.PwndbgToolWindowManager
 import com.yu212.pwndbg.ui.components.CommandHistoryField
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
-import com.yu212.pwndbg.ui.components.ToolbarFactory
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.event.ActionEvent
@@ -24,22 +19,15 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
 
     private val addressField = CommandHistoryField()
     private val inspectButton = JButton("Inspect")
-    private val addressLabel = JLabel("Inspected: -")
     private val rootPanel = BorderLayoutPanel()
-    private val openInNewTabAction = object: AnAction("Open in New Tab", null, AllIcons.Actions.OpenNewTab) {
-        override fun actionPerformed(e: AnActionEvent) = moveCurrentInspectToNewTab()
-    }
-    private val openInNewTabToolbar = ToolbarFactory.create(
-        place = "PwndbgAddressInspectActions",
-        targetComponent = rootPanel,
-        actions = listOf(openInNewTabAction)
-    )
 
-    private val inspectView = AddressInspectionView(project)
     private val stateCards = CardLayout()
     private val stateContainer = JPanel(stateCards)
-    private val emptyStatePanel = JPanel(BorderLayout())
-    private val inspectedStatePanel = BorderLayoutPanel()
+    private val emptyPanel = JPanel(BorderLayout())
+    private val inspectedPanel = JPanel(BorderLayout())
+
+    private var inspectView: AddressInspectionView? = null
+    private var currentFontSize: Int? = null
 
     init {
         val inputPanel = JPanel(BorderLayout(8, 0))
@@ -47,20 +35,10 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
         inputPanel.add(addressField, BorderLayout.CENTER)
         inputPanel.add(inspectButton, BorderLayout.EAST)
 
-        val inspectActionsRow = JPanel(BorderLayout())
-        inspectActionsRow.add(addressLabel, BorderLayout.WEST)
-        inspectActionsRow.add(openInNewTabToolbar.component, BorderLayout.EAST)
+        emptyPanel.add(JLabel("No address inspected yet."), BorderLayout.NORTH)
 
-        emptyStatePanel.add(
-            JLabel("No address inspected yet."),
-            BorderLayout.NORTH
-        )
-
-        inspectedStatePanel.addToTop(inspectActionsRow)
-        inspectedStatePanel.addToCenter(JBScrollPane(inspectView.component))
-
-        stateContainer.add(emptyStatePanel, CARD_EMPTY)
-        stateContainer.add(inspectedStatePanel, CARD_INSPECTED)
+        stateContainer.add(emptyPanel, CARD_EMPTY)
+        stateContainer.add(inspectedPanel, CARD_INSPECTED)
 
         rootPanel.addToTop(inputPanel)
         rootPanel.addToCenter(stateContainer)
@@ -91,20 +69,39 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
         get() = rootPanel
 
     override fun setTextFontSize(size: Int?) {
-        inspectView.setTextFontSize(size)
+        currentFontSize = size
+        inspectView?.setTextFontSize(size)
     }
 
     private fun inspectOnAddressTab() {
         val baseAddress = addressField.text.trim()
-        if (baseAddress.isEmpty()) return
+        if (baseAddress.isEmpty()) {
+            showEmptyState()
+            return
+        }
         addressField.addHistory(baseAddress)
 
-        inspectView.inspectAddress(baseAddress) { snapshot ->
-            ApplicationManager.getApplication().invokeLater {
-                addressLabel.text = "Inspected: ${snapshot.address}"
-                showInspectedState()
-            }
+        val existing = inspectView
+        if (existing != null) {
+            stateCards.show(stateContainer, CARD_INSPECTED)
+            existing.inspectAddress(baseAddress)
+            return
         }
+
+        val created = AddressInspectionView(
+            project = project,
+            tabId = id,
+            initialState = AddressInspectionTabState(address = baseAddress),
+            onOpenInNewTab = ::openCurrentStateInNewTab
+        )
+        inspectView = created
+        currentFontSize?.let(created::setTextFontSize)
+
+        inspectedPanel.removeAll()
+        inspectedPanel.add(JBScrollPane(created.component), BorderLayout.CENTER)
+        inspectedPanel.revalidate()
+        inspectedPanel.repaint()
+        stateCards.show(stateContainer, CARD_INSPECTED)
     }
 
     private fun inspectInputInNewTab() {
@@ -114,10 +111,13 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
 
         val manager = project.getService(PwndbgToolWindowManager::class.java)
         val tabId = nextAddressTemporaryTabId()
-        val panel = manager.getOrCreateTemporaryPanel(tabId) {
-            AddressTemporaryTabPanel(project, tabId, baseAddress)
+        manager.getOrCreateTemporaryPanel(tabId) {
+            AddressTemporaryTabPanel(
+                project = project,
+                id = tabId,
+                initialState = AddressInspectionTabState(address = baseAddress)
+            )
         }
-        panel.inspectAddress(baseAddress)
         manager.showTemporaryTabBesideHost(
             tabId = tabId,
             hostTabId = id,
@@ -125,31 +125,31 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
         )
     }
 
-    private fun moveCurrentInspectToNewTab() {
-        val snapshot = inspectView.getSnapshot() ?: return
-
+    private fun openCurrentStateInNewTab(state: AddressInspectionTabState) {
         val manager = project.getService(PwndbgToolWindowManager::class.java)
         val tabId = nextAddressTemporaryTabId()
-        val panel = manager.getOrCreateTemporaryPanel(tabId) {
-            AddressTemporaryTabPanel(project, tabId, snapshot.address)
+        manager.getOrCreateTemporaryPanel(tabId) {
+            AddressTemporaryTabPanel(
+                project = project,
+                id = tabId,
+                initialState = state
+            )
         }
-        panel.setSnapshot(snapshot)
         manager.showTemporaryTabBesideHost(
             tabId = tabId,
             hostTabId = id,
             focusNewTab = false
         )
-
-        inspectView.clearOutput()
         showEmptyState()
     }
 
     private fun showEmptyState() {
+        inspectView?.dispose()
+        inspectView = null
+        inspectedPanel.removeAll()
+        inspectedPanel.revalidate()
+        inspectedPanel.repaint()
         stateCards.show(stateContainer, CARD_EMPTY)
-    }
-
-    private fun showInspectedState() {
-        stateCards.show(stateContainer, CARD_INSPECTED)
     }
 
     private fun isCtrlModified(event: ActionEvent): Boolean {
@@ -157,7 +157,8 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
     }
 
     override fun dispose() {
-        inspectView.dispose()
+        inspectView?.dispose()
+        inspectView = null
     }
 
     private companion object {
