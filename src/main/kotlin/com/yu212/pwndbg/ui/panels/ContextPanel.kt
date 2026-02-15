@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.ui.ContextHistoryManager
+import com.yu212.pwndbg.ui.components.AnsiSegment
 import com.yu212.pwndbg.ui.components.AnsiTextViewer
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import com.yu212.pwndbg.ui.components.ToolbarFactory
@@ -73,7 +74,7 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
         rootPanel.repaint()
     }
 
-    fun setContextSegments(segments: List<AnsiTextViewer.AnsiSegment>) {
+    fun setContextSegments(segments: List<AnsiSegment>) {
         viewer.setSegments(segments, preserveView = true)
     }
 

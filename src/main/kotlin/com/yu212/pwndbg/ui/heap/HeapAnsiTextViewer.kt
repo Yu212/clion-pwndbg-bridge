@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.ui.JBColor
 import com.yu212.pwndbg.ui.ContextHistoryManager
+import com.yu212.pwndbg.ui.components.AnsiSegment
 import com.yu212.pwndbg.ui.components.AnsiTextViewer
 import java.awt.Cursor
 import java.awt.event.KeyAdapter

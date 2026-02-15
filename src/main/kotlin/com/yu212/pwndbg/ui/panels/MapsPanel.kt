@@ -67,32 +67,23 @@ class MapsPanel(private val project: Project): PwndbgTabPanel {
 
     fun refreshAll() {
         val service = project.getService(PwndbgService::class.java)
-        service.executeCommandCapture("checksec") { output, error ->
-            printResult(checksecView, output, error)
-            service.executeCommandCapture("vmmap") { output2, error2 ->
-                printResult(vmmapView, output2, error2)
-                service.executeCommandCapture("got -r") { output3, error3 ->
-                    printResult(gotView, output3, error3)
-                    service.executeCommandCapture("plt") { output4, error4 ->
-                        printResult(pltView, output4, error4)
-                    }
-                }
-            }
+        service.executeCommandsSequential(
+            PwndbgService.CommandRequest("checksec"),
+            PwndbgService.CommandRequest("vmmap"),
+            PwndbgService.CommandRequest("got -r"),
+            PwndbgService.CommandRequest("plt")
+        ) { (checksec, vmmap, got, plt) ->
+            printResult(checksecView, checksec)
+            printResult(vmmapView, vmmap)
+            printResult(gotView, got)
+            printResult(pltView, plt)
         }
     }
 
-    private fun printResult(view: CollapsibleSection, output: String?, error: String?) {
-        if (!error.isNullOrBlank()) {
-            view.setText(error.trimEnd('\n', '\r'), isError = true)
-            outputPanel.revalidate()
-            outputPanel.repaint()
-            return
-        }
-        if (!output.isNullOrBlank()) {
-            view.setText(output.trimEnd('\n', '\r'), isError = false)
-            outputPanel.revalidate()
-            outputPanel.repaint()
-        }
+    private fun printResult(view: CollapsibleSection, result: PwndbgService.CommandCaptureResult) {
+        view.setSegments(result.segments)
+        outputPanel.revalidate()
+        outputPanel.repaint()
     }
 
     override fun dispose() {
@@ -101,5 +92,4 @@ class MapsPanel(private val project: Project): PwndbgTabPanel {
         gotView.dispose()
         pltView.dispose()
     }
-
 }

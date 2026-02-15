@@ -86,10 +86,10 @@ class CollapsibleSection(
     }
 
     fun setText(text: String, isError: Boolean) {
-        setSegments(AnsiTextViewer.decodeAnsi(text, isError))
+        setSegments(AnsiSegment.decodeAnsi(text, isError))
     }
 
-    fun setSegments(segments: List<AnsiTextViewer.AnsiSegment>) {
+    fun setSegments(segments: List<AnsiSegment>) {
         viewer.setSegments(segments) {
             updateSizeHints()
             revalidate()

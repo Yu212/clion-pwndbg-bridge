@@ -1,7 +1,5 @@
 package com.yu212.pwndbg.ui.components
 
-import com.intellij.execution.process.AnsiEscapeDecoder
-import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
@@ -13,7 +11,6 @@ import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.Key
 import java.awt.Dimension
 import javax.swing.JComponent
 import javax.swing.ScrollPaneConstants
@@ -23,37 +20,6 @@ open class AnsiTextViewer(
     private val adjustHeight: Boolean = false,
     private val verticalScrollBarPolicy: Int = ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
 ): Disposable {
-    data class AnsiSegment(
-        val text: String,
-        val attributes: Key<*>
-    )
-
-    companion object {
-        fun decodeAnsi(text: String, isError: Boolean): List<AnsiSegment> {
-            val baseType = if (isError) ProcessOutputTypes.STDERR else ProcessOutputTypes.STDOUT
-            val decoder = AnsiEscapeDecoder()
-            val segments = ArrayList<AnsiSegment>()
-            decoder.escapeText(text, baseType) { chunk, attrs ->
-                if (chunk.isNotEmpty()) {
-                    segments.add(AnsiSegment(chunk, attrs))
-                }
-            }
-            return segments
-        }
-
-        fun decodeCommandOutput(
-            commandName: String,
-            stdout: String?,
-            stderr: String?
-        ): List<AnsiSegment> {
-            return if (stdout.isNullOrBlank() || !stderr.isNullOrBlank()) {
-                decodeAnsi("$commandName command failed: $stderr\n", true)
-            } else {
-                decodeAnsi(stdout, false)
-            }
-        }
-    }
-
     protected val document = EditorFactory.getInstance().createDocument("")
     protected val editor: Editor = EditorFactory.getInstance().createViewer(document, project)
     val component: JComponent = editor.component

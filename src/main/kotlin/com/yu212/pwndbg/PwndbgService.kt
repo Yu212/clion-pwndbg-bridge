@@ -13,11 +13,35 @@ import com.jetbrains.cidr.execution.debugger.backend.dap.DapDriver
 import com.yu212.pwndbg.debug.CidrSessionBridge
 import com.yu212.pwndbg.settings.PwndbgSettingsService
 import com.yu212.pwndbg.ui.PwndbgToolWindowManager
+import com.yu212.pwndbg.ui.components.AnsiSegment
+import com.yu212.pwndbg.ui.components.AnsiSegment.Companion.decodeAnsi
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
 @Service(Service.Level.PROJECT)
 class PwndbgService(private val project: Project): Disposable {
+    data class RawOutput(
+        val stdout: String?,
+        val stderr: String?
+    ) {
+        val isError: Boolean
+            get() = stdout.isNullOrBlank() || !stderr.isNullOrBlank()
+    }
+
+    data class CommandRequest(
+        val command: String,
+        val preprocess: (RawOutput) -> RawOutput = { it }
+    )
+
+    data class CommandCaptureResult(
+        val command: String,
+        val rawOutput: RawOutput,
+        val segments: List<AnsiSegment>
+    ) {
+        val isError: Boolean
+            get() = rawOutput.isError
+    }
+
     private val log = Logger.getInstance(PwndbgService::class.java)
     private var initialized = false
 
@@ -111,6 +135,50 @@ class PwndbgService(private val project: Project): Disposable {
             return
         }
         bridge.runCommandCapture(command, onResult)
+    }
+
+    fun executeCommandCaptureDecoded(
+        request: CommandRequest,
+        onResult: (CommandCaptureResult) -> Unit
+    ) {
+        executeCommandCapture(request.command) { stdout, stderr ->
+            val output = request.preprocess(RawOutput(stdout, stderr))
+            onResult(
+                CommandCaptureResult(
+                    command = request.command,
+                    rawOutput = output,
+                    segments = decodeCommandOutput(output)
+                )
+            )
+        }
+    }
+
+    fun decodeCommandOutput(rawOutput: RawOutput): List<AnsiSegment> {
+        return if (rawOutput.stdout.isNullOrBlank() || !rawOutput.stderr.isNullOrBlank()) {
+            decodeAnsi(rawOutput.stderr ?: "", true)
+        } else {
+            decodeAnsi(rawOutput.stdout, false)
+        }
+    }
+
+    fun executeCommandsSequential(
+        vararg requests: CommandRequest,
+        onComplete: (List<CommandCaptureResult>) -> Unit
+    ) {
+        val results = mutableListOf<CommandCaptureResult>()
+
+        fun runAt(index: Int) {
+            if (index >= requests.size) {
+                onComplete(results)
+                return
+            }
+            val request = requests[index]
+            executeCommandCaptureDecoded(request) { result ->
+                results.add(result)
+                runAt(index + 1)
+            }
+        }
+        runAt(0)
     }
 
     override fun dispose() {

@@ -2,7 +2,7 @@ package com.yu212.pwndbg.ui.heap
 
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.openapi.util.TextRange
-import com.yu212.pwndbg.ui.components.AnsiTextViewer
+import com.yu212.pwndbg.ui.components.AnsiSegment
 import java.awt.Color
 
 object HeapChunkParser {
@@ -16,7 +16,7 @@ object HeapChunkParser {
         }
     }
 
-    fun parse(segments: List<AnsiTextViewer.AnsiSegment>): List<HeapChunkModel>? {
+    fun parse(segments: List<AnsiSegment>): List<HeapChunkModel>? {
         val chunks = mutableListOf<HeapChunkModel>()
         var startQword = 0
         var qword = 0

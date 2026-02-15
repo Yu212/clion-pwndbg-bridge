@@ -3,6 +3,7 @@ package com.yu212.pwndbg.ui.panels
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
+import com.yu212.pwndbg.ui.components.AnsiSegment
 import com.yu212.pwndbg.ui.components.CollapsibleSection
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
@@ -46,14 +47,12 @@ class ChunkDetailPanel(project: Project): PwndbgTabPanel {
 
     fun setChunkResult(
         address: ULong,
-        hiOutput: String,
-        hiIsError: Boolean,
-        tryFreeOutput: String,
-        tryFreeIsError: Boolean
+        hiSegments: List<AnsiSegment>,
+        tryFreeSegments: List<AnsiSegment>,
     ) {
         headerLabel.text = "Chunk: 0x${address.toString(16)}"
-        hiView.setText(hiOutput.trimEnd('\n', '\r'), hiIsError)
-        tryFreeView.setText(tryFreeOutput.trimEnd('\n', '\r'), tryFreeIsError)
+        hiView.setSegments(hiSegments)
+        tryFreeView.setSegments(tryFreeSegments)
         outputPanel.revalidate()
         outputPanel.repaint()
     }

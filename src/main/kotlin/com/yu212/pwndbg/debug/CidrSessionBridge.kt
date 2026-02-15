@@ -115,7 +115,7 @@ class CidrSessionBridge(
             val result = response?.result
             if (!result.isNullOrBlank()) {
                 ApplicationManager.getApplication().invokeLater {
-                    commandPanel?.printOutput(result + "\n", isError = false)
+                    commandPanel?.printOutput(result, isError = false)
                 }
             }
         }
@@ -136,10 +136,8 @@ class CidrSessionBridge(
         future.whenComplete { response, err ->
             if (err != null) {
                 log.warn("Pwndbg DAP evaluate failed", err)
-                onResult(null, err.message ?: "Pwndbg command failed.")
-                return@whenComplete
             }
-            onResult(response?.result, null)
+            onResult(response?.result, err?.message)
         }
     }
 

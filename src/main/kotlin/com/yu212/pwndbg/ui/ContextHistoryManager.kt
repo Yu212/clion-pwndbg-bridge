@@ -5,7 +5,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import com.yu212.pwndbg.PwndbgService
 import com.yu212.pwndbg.settings.PwndbgSettingsService
-import com.yu212.pwndbg.ui.components.AnsiTextViewer
+import com.yu212.pwndbg.ui.components.AnsiSegment
 import com.yu212.pwndbg.ui.heap.HeapChunkModel
 import com.yu212.pwndbg.ui.heap.HeapChunkParser
 import java.util.*
@@ -13,12 +13,12 @@ import java.util.*
 @Service(Service.Level.PROJECT)
 class ContextHistoryManager(private val project: Project) {
     data class HistoryEntry(
-        val contextSegments: List<AnsiTextViewer.AnsiSegment>,
-        val heapSegments: List<AnsiTextViewer.AnsiSegment>,
+        val contextSegments: List<AnsiSegment>,
+        val heapSegments: List<AnsiSegment>,
         val heapChunks: List<HeapChunkModel>?,
-        val arenasSegments: List<AnsiTextViewer.AnsiSegment>,
-        val heapInfoSegments: List<AnsiTextViewer.AnsiSegment>,
-        val binsSegments: List<AnsiTextViewer.AnsiSegment>
+        val arenasSegments: List<AnsiSegment>,
+        val heapInfoSegments: List<AnsiSegment>,
+        val binsSegments: List<AnsiSegment>
     )
 
     private val history = ArrayList<HistoryEntry>()
@@ -79,37 +79,29 @@ class ContextHistoryManager(private val project: Project) {
     }
 
     fun refresh(callback: (HistoryEntry) -> Unit) {
-        service.executeCommandCapture("context") { contextResult, contextError ->
-            val contextSegments = AnsiTextViewer.decodeCommandOutput("context", contextResult, contextError)
-            service.executeCommandCapture("vis-heap-chunks") { heapResult, heapError ->
-                val heapSegments = AnsiTextViewer.decodeCommandOutput("vis-heap-chunks", stripHeapWarningPrefix(heapResult), heapError)
-                val heapChunks = HeapChunkParser.parse(heapSegments)
-                service.executeCommandCapture("arenas") { arenasResult, arenasError ->
-                    val arenasSegments = AnsiTextViewer.decodeCommandOutput("arenas", arenasResult, arenasError)
-                    service.executeCommandCapture("heap") { heapInfoResult, heapInfoError ->
-                        val heapInfoSegments = AnsiTextViewer.decodeCommandOutput("heap", heapInfoResult, heapInfoError)
-                        service.executeCommandCapture("bins") { binsResult, binsError ->
-                            val binsSegments = AnsiTextViewer.decodeCommandOutput("bins", binsResult, binsError)
-                            callback(
-                                HistoryEntry(
-                                    contextSegments,
-                                    heapSegments,
-                                    heapChunks,
-                                    arenasSegments,
-                                    heapInfoSegments,
-                                    binsSegments
-                                )
-                            )
-                        }
-                    }
-                }
-            }
+        service.executeCommandsSequential(
+            PwndbgService.CommandRequest("context"),
+            PwndbgService.CommandRequest("vis-heap-chunks", ::stripHeapWarningPrefix),
+            PwndbgService.CommandRequest("arenas"),
+            PwndbgService.CommandRequest("heap"),
+            PwndbgService.CommandRequest("bins")
+        ) { (context, heap, arenas, heapInfo, bins) ->
+            callback(
+                HistoryEntry(
+                    contextSegments = context.segments,
+                    heapSegments = heap.segments,
+                    heapChunks = HeapChunkParser.parse(heap.segments),
+                    arenasSegments = arenas.segments,
+                    heapInfoSegments = heapInfo.segments,
+                    binsSegments = bins.segments
+                )
+            )
         }
     }
 
-    private fun stripHeapWarningPrefix(text: String?): String? {
+    private fun stripHeapWarningPrefix(rawOutput: PwndbgService.RawOutput): PwndbgService.RawOutput {
         val heapWarn = "\u001b[33mpwndbg will try to resolve the heap symbols via heuristic now since we cannot resolve the heap via the debug symbols.\nThis might not work in all cases. Use `help set resolve-heap-via-heuristic` for more details.\n\u001b[0m\n"
-        return text?.removePrefix(heapWarn)?.trimStart('\n', '\r')
+        return rawOutput.copy(stdout = rawOutput.stdout?.removePrefix(heapWarn)?.trimStart('\n', '\r'))
     }
 
     fun showIndex(index: Int) {
@@ -150,6 +142,7 @@ class ContextHistoryManager(private val project: Project) {
             val contextPanel = toolWindowManager.contextPanel
             val heapPanel = toolWindowManager.heapPanel
             val heapInfoPanel = toolWindowManager.heapInfoPanel
+            val currentIndex = currentIndex
             if (currentIndex == null) {
                 contextPanel?.setContextSegments(emptyList())
                 heapPanel?.setHeapContent(emptyList(), null)
@@ -157,7 +150,7 @@ class ContextHistoryManager(private val project: Project) {
                 heapInfoPanel?.setHeapSegments(emptyList())
                 heapInfoPanel?.setBinsSegments(emptyList())
             } else {
-                val entry = history[currentIndex!! - droppedCount]
+                val entry = history[currentIndex - droppedCount]
                 contextPanel?.setContextSegments(entry.contextSegments)
                 heapPanel?.setHeapContent(entry.heapSegments, entry.heapChunks)
                 heapInfoPanel?.setArenasSegments(entry.arenasSegments)

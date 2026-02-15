@@ -6,7 +6,6 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.Project
 import com.yu212.pwndbg.PwndbgService
-import com.yu212.pwndbg.ui.components.AnsiTextViewer
 import com.yu212.pwndbg.ui.components.CollapsibleSection
 import com.yu212.pwndbg.ui.components.CommandHistoryField
 import java.awt.Dimension
@@ -65,25 +64,21 @@ internal class AddressInspectionView(private val project: Project): Disposable {
         val xFormat = xFormatField.text.trim().ifEmpty { "16gx" }
         xFormatField.addHistory(xFormat)
         val service = project.getService(PwndbgService::class.java)
-        service.executeCommandCapture("xinfo $baseAddress") { xinfoOutput, xinfoError ->
-            val xinfo = AnsiTextViewer.decodeCommandOutput("xinfo", xinfoOutput, xinfoError)
-            service.executeCommandCapture("telescope $baseAddress $telescopeLines") { telescopeOutput, telescopeError ->
-                val telescope = AnsiTextViewer.decodeCommandOutput("telescope", telescopeOutput, telescopeError)
-                val xCommand = "x/$xFormat $baseAddress"
-                service.executeCommandCapture(xCommand) { memoryOutput, memoryError ->
-                    val memory = AnsiTextViewer.decodeCommandOutput("x/$xFormat", memoryOutput, memoryError)
-                    val snapshot = AddressInspectionSnapshot(
-                        address = baseAddress,
-                        xFormat = xFormat,
-                        telescopeLines = telescopeLines,
-                        xinfoSegments = xinfo,
-                        telescopeSegments = telescope,
-                        memorySegments = memory
-                    )
-                    setSnapshot(snapshot)
-                    onComplete?.invoke(snapshot)
-                }
-            }
+        service.executeCommandsSequential(
+            PwndbgService.CommandRequest("xinfo $baseAddress"),
+            PwndbgService.CommandRequest("telescope $baseAddress $telescopeLines"),
+            PwndbgService.CommandRequest("x/$xFormat $baseAddress"),
+        ) { (xinfo, telescope, memory) ->
+            val snapshot = AddressInspectionSnapshot(
+                address = baseAddress,
+                xFormat = xFormat,
+                telescopeLines = telescopeLines,
+                xinfoSegments = xinfo.segments,
+                telescopeSegments = telescope.segments,
+                memorySegments = memory.segments
+            )
+            setSnapshot(snapshot)
+            onComplete?.invoke(snapshot)
         }
     }
 
@@ -125,13 +120,12 @@ internal class AddressInspectionView(private val project: Project): Disposable {
 
         val service = project.getService(PwndbgService::class.java)
         val xCommand = "x/$xFormat $baseAddress"
-        service.executeCommandCapture(xCommand) { output, error ->
-            val memory = AnsiTextViewer.decodeCommandOutput("x/$xFormat", output, error)
-            memoryView.setSegments(memory)
+        service.executeCommandCaptureDecoded(PwndbgService.CommandRequest(xCommand)) { result ->
+            memoryView.setSegments(result.segments)
             refreshOutputPanel()
             currentSnapshot = currentSnapshot?.copy(
                 xFormat = xFormat,
-                memorySegments = memory
+                memorySegments = result.segments
             )
         }
     }
@@ -143,13 +137,14 @@ internal class AddressInspectionView(private val project: Project): Disposable {
         updateTelescopeTitle()
         val baseAddress = inspectedAddress ?: return
         val service = project.getService(PwndbgService::class.java)
-        service.executeCommandCapture("telescope $baseAddress $telescopeLines") { output, error ->
-            val telescope = AnsiTextViewer.decodeCommandOutput("telescope", output, error)
-            telescopeView.setSegments(telescope)
+        service.executeCommandCaptureDecoded(
+            PwndbgService.CommandRequest("telescope $baseAddress $telescopeLines")
+        ) { result ->
+            telescopeView.setSegments(result.segments)
             refreshOutputPanel()
             currentSnapshot = currentSnapshot?.copy(
                 telescopeLines = telescopeLines,
-                telescopeSegments = telescope
+                telescopeSegments = result.segments
             )
         }
     }

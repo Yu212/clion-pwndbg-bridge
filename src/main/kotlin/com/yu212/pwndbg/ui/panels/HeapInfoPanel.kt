@@ -3,7 +3,7 @@ package com.yu212.pwndbg.ui.panels
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
-import com.yu212.pwndbg.ui.components.AnsiTextViewer
+import com.yu212.pwndbg.ui.components.AnsiSegment
 import com.yu212.pwndbg.ui.components.CollapsibleSection
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
@@ -47,19 +47,19 @@ class HeapInfoPanel(project: Project): PwndbgTabPanel {
         outputPanel.repaint()
     }
 
-    fun setArenasSegments(segments: List<AnsiTextViewer.AnsiSegment>) {
+    fun setArenasSegments(segments: List<AnsiSegment>) {
         arenasView.setSegments(segments)
         outputPanel.revalidate()
         outputPanel.repaint()
     }
 
-    fun setHeapSegments(segments: List<AnsiTextViewer.AnsiSegment>) {
+    fun setHeapSegments(segments: List<AnsiSegment>) {
         heapView.setSegments(segments)
         outputPanel.revalidate()
         outputPanel.repaint()
     }
 
-    fun setBinsSegments(segments: List<AnsiTextViewer.AnsiSegment>) {
+    fun setBinsSegments(segments: List<AnsiSegment>) {
         binsView.setSegments(segments)
         outputPanel.revalidate()
         outputPanel.repaint()
