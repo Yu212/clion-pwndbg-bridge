@@ -2,11 +2,8 @@ package com.yu212.pwndbg.ui.components
 
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
 import java.awt.BorderLayout
@@ -43,7 +40,11 @@ class CollapsibleSection(
             e.presentation.icon = if (collapsed) AllIcons.General.ArrowRight else AllIcons.General.ArrowDown
         }
     }
-    private val toolbar = createToolbar(extraActions)
+    private val toolbar = ToolbarFactory.create(
+        place = "PwndbgCollapse",
+        targetComponent = this,
+        actions = extraActions + toggleAction
+    )
 
     val component: JComponent
         get() = this
@@ -51,23 +52,12 @@ class CollapsibleSection(
     init {
         header.isOpaque = false
         header.add(titleComponent ?: headerLabel, BorderLayout.CENTER)
-        header.add(toolbar, BorderLayout.EAST)
+        header.add(toolbar.component, BorderLayout.EAST)
 
         addToTop(header)
         addToCenter(viewer.component)
         viewer.component.isVisible = !collapsed
         updateSizeHints()
-    }
-
-    private fun createToolbar(extraActions: List<AnAction>): JComponent {
-        val group = DefaultActionGroup()
-        extraActions.forEach { group.add(it) }
-        group.add(toggleAction)
-        val toolbar = ActionManager.getInstance().createActionToolbar("PwndbgCollapse", group, true)
-        (toolbar as? ActionToolbarImpl)?.setReservePlaceAutoPopupIcon(false)
-        toolbar.targetComponent = this
-        toolbar.component.isOpaque = false
-        return toolbar.component
     }
 
     private fun setCollapsed(value: Boolean) {

@@ -141,19 +141,52 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
 
         val attachedWindow = findWindowByTabId(binding.tabId)
         if (attachedWindow != null) {
+            binding.content?.let {
+                attachedWindow.contentManager.setSelectedContent(it, true, true)
+            }
             attachedWindow.show()
             return
         }
 
         val hostWindow = findWindowByTabId(hostTabId) ?: return
-        val selectedBeforeSplit = hostWindow.contentManager.selectedContent
         val content = createContentOnWindow(binding, hostWindow)
+        val selectedBeforeSplit = hostWindow.contentManager.selectedContent
 
         val decorator = InternalDecoratorImpl.findNearestDecorator(hostWindow.component)
         decorator?.splitWithContent(content, splitDirection, -1)
 
         if (selectedBeforeSplit != null) {
             hostWindow.contentManager.setSelectedContent(selectedBeforeSplit, true, true)
+        }
+        hostWindow.show()
+    }
+
+    fun showTemporaryTabBesideHost(
+        tabId: String,
+        hostTabId: String,
+        focusNewTab: Boolean
+    ) {
+        val binding = bindingsByTabId[tabId] ?: return
+        if (!binding.temporary) return
+
+        val attachedWindow = findWindowByTabId(binding.tabId)
+        if (attachedWindow != null) {
+            if (focusNewTab) {
+                binding.content?.let {
+                    attachedWindow.contentManager.setSelectedContent(it, true, true)
+                }
+            }
+            attachedWindow.show()
+            return
+        }
+
+        val hostWindow = findWindowByTabId(hostTabId) ?: return
+        val hostContent = bindingsByTabId[hostTabId]?.content
+        val hostIndex = hostContent?.let { hostWindow.contentManager.getIndexOfContent(it) + 1 }
+        val content = createContentOnWindow(binding, hostWindow, hostIndex)
+
+        if (focusNewTab) {
+            hostWindow.contentManager.setSelectedContent(content, true, true)
         }
         hostWindow.show()
     }
@@ -278,7 +311,7 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
         return binding.windowId?.let { toolWindowManager.getToolWindow(it) }
     }
 
-    private fun createContentOnWindow(binding: TabBinding, toolWindow: ToolWindow): Content {
+    private fun createContentOnWindow(binding: TabBinding, toolWindow: ToolWindow, index: Int? = null): Content {
         val panel = binding.panel
         val content = contentFactory.createContent(panel.component, panel.title, false)
         content.setDisposer {
@@ -300,7 +333,11 @@ class PwndbgToolWindowManager(private val project: Project): PersistentStateComp
         content.tabName = panel.title
         binding.content = content
         tabIdByContent[content] = binding.tabId
-        toolWindow.contentManager.addContent(content)
+        if (index == null) {
+            toolWindow.contentManager.addContent(content)
+        } else {
+            toolWindow.contentManager.addContent(content, index)
+        }
         binding.windowId = toolWindow.id
         addTabToWindow(toolWindow.id, binding.tabId)
         return content

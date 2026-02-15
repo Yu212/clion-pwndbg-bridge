@@ -1,16 +1,14 @@
 package com.yu212.pwndbg.ui.panels
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.PwndbgService
 import com.yu212.pwndbg.ui.components.CollapsibleSection
+import com.yu212.pwndbg.ui.components.ToolbarFactory
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
 import javax.swing.BoxLayout
@@ -34,7 +32,11 @@ class MapsPanel(private val project: Project): PwndbgTabPanel {
             refreshAll()
         }
     }
-    private val actionToolbar = createActionToolbar()
+    private val actionToolbar = ToolbarFactory.create(
+        place = "PwndbgMapsActions",
+        targetComponent = rootPanel,
+        actions = listOf(refreshAction)
+    )
 
     init {
         val toolbar = JPanel(BorderLayout(8, 0))
@@ -49,8 +51,6 @@ class MapsPanel(private val project: Project): PwndbgTabPanel {
 
         rootPanel.addToTop(toolbar)
         rootPanel.addToCenter(JBScrollPane(outputPanel))
-
-        actionToolbar.component.isOpaque = false
     }
 
     override val component: JComponent
@@ -102,12 +102,4 @@ class MapsPanel(private val project: Project): PwndbgTabPanel {
         pltView.dispose()
     }
 
-    private fun createActionToolbar(): com.intellij.openapi.actionSystem.ActionToolbar {
-        val group = DefaultActionGroup()
-        group.add(refreshAction)
-        val toolbar = ActionManager.getInstance().createActionToolbar("PwndbgMapsActions", group, true)
-        (toolbar as? ActionToolbarImpl)?.setReservePlaceAutoPopupIcon(false)
-        toolbar.targetComponent = rootPanel
-        return toolbar
-    }
 }

@@ -1,15 +1,13 @@
 package com.yu212.pwndbg.ui.panels
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.impl.ActionToolbarImpl
 import com.intellij.openapi.project.Project
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.ui.ContextHistoryManager
 import com.yu212.pwndbg.ui.components.AnsiTextViewer
+import com.yu212.pwndbg.ui.components.ToolbarFactory
 import com.yu212.pwndbg.ui.components.PwndbgTabPanel
 import java.awt.BorderLayout
 import java.awt.Font
@@ -59,7 +57,11 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
     }
     private val timelineSlider = JSlider()
     private val rootPanel = BorderLayoutPanel()
-    private val actionToolbar = createActionToolbar()
+    private val actionToolbar = ToolbarFactory.create(
+        place = "PwndbgContextActions",
+        targetComponent = rootPanel,
+        actions = listOf(pinAction, refreshAction)
+    )
     private var sliderUpdating = false
 
     override val component: JComponent
@@ -162,8 +164,6 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
         })
         installPinShortcuts()
         updateNavigationState()
-
-        actionToolbar.component.isOpaque = false
     }
 
     private fun updateSliderState() {
@@ -260,16 +260,6 @@ class ContextPanel(private val project: Project): PwndbgTabPanel {
         val clampedX = x.coerceIn(start, end)
         val ratio = (clampedX - start).toDouble() / (end - start).toDouble()
         return (min + (max - min) * ratio).roundToInt()
-    }
-
-    private fun createActionToolbar(): com.intellij.openapi.actionSystem.ActionToolbar {
-        val group = DefaultActionGroup()
-        group.add(pinAction)
-        group.add(refreshAction)
-        val toolbar = ActionManager.getInstance().createActionToolbar("PwndbgContextActions", group, true)
-        (toolbar as? ActionToolbarImpl)?.setReservePlaceAutoPopupIcon(false)
-        toolbar.targetComponent = rootPanel
-        return toolbar
     }
 
     fun updateHistoryState() {
