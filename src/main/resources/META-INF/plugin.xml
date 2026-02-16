@@ -12,21 +12,21 @@
     </dependencies>
 
     <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="com.yu212.pwndbg.PwndbgStartupActivity"/>
+        <postStartupActivity implementation="com.yu212.pwndbg.app.PwndbgStartupActivity"/>
         <applicationConfigurable
                 displayName="Pwndbg Bridge"
                 id="com.yu212.pwndbg.settings"
-                implementation="com.yu212.pwndbg.settings.PwndbgSettingsConfigurable"/>
+                instance="com.yu212.pwndbg.settings.PwndbgSettingsConfigurable"/>
     </extensions>
 
     <actions>
         <group id="PwndbgTabMoveGroup"
-               class="com.yu212.pwndbg.ui.actions.MoveTabActionGroup"
+               class="com.yu212.pwndbg.shared.ui.actions.MoveTabActionGroup"
                popup="true">
             <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
         </group>
         <group id="PwndbgTabFontSizeGroup"
-               class="com.yu212.pwndbg.ui.actions.TabFontSizeActionGroup"
+               class="com.yu212.pwndbg.shared.ui.actions.TabFontSizeActionGroup"
                popup="true">
             <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
         </group>

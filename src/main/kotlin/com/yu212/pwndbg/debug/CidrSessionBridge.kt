@@ -14,7 +14,8 @@ import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XDebugSessionListener
 import com.jetbrains.cidr.execution.debugger.CidrDebugProcess
 import com.jetbrains.cidr.execution.debugger.backend.dap.DapDriver
-import com.yu212.pwndbg.ui.PwndbgToolWindowManager
+import com.yu212.pwndbg.app.PwndbgToolWindowManager
+import com.yu212.pwndbg.features.context.ContextHistoryManager
 import org.eclipse.lsp4j.debug.EvaluateArguments
 
 class CidrSessionBridge(
@@ -54,7 +55,7 @@ class CidrSessionBridge(
         override fun sessionPaused() {
             log.debug("Pwndbg: session paused, refreshing context.")
             val historyManager = xDebugSession.project
-                    .getService(com.yu212.pwndbg.ui.ContextHistoryManager::class.java)
+                    .getService(ContextHistoryManager::class.java)
             historyManager.refresh { entry ->
                 historyManager.pushEntry(entry)
             }
