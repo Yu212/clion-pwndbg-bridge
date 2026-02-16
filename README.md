@@ -2,15 +2,40 @@
 
 A CLion plugin built for CTFs that brings Pwndbg-powered GDB workflows into a modern GUI. It adds a dedicated tool window where you can run Pwndbg/GDB commands, view context history, manage breakpoints, and inspect memory without leaving the IDE.
 
-## Features
+## Panels
 
-- **Command console**: Send Pwndbg/GDB commands and see colored output.
-- **Context timeline**: Auto-refresh on pause with a slider, history, and bookmarks.
-- **Breakpoints**: Unified list for CLion and GDB breakpoints with enable/disable and jump-to-source.
-- **Address inspector**: `xinfo`, `telescope`, and `x/` views with quick format tweaks.
-- **Maps**: `checksec`, `vmmap`, `got`, and `plt` with one-click refresh.
-- **Heap views**: `vis-heap-chunks` output with folding and a heap info panel for `arenas`, `heap`, and `bins`.
+### Command
+Run Pwndbg/GDB commands directly from the tool window.
+It supports ANSI-colored output, command history, and `Tab` completion.
+
+### Context
+Shows `context` output over time whenever execution pauses.
+You can move through history with timeline controls and pin important states.
+
+### Breakpoints
+Provides a unified view of CLion and GDB breakpoints in one place.
+You can toggle, delete, refresh, and jump to source locations for CLion breakpoints.
+
+### Address
+Inspects an address with `xinfo`, `telescope`, and `x/` in a single panel.
+You can adjust `x/` format, change telescope count, and open inspections in new tabs.
+
+### Maps
+Displays `checksec`, `vmmap`, `got -r`, and `plt` outputs together.
+Useful for quick binary and memory-layout inspection during debugging.
+
+### Heap
+Displays `vis-heap-chunks` output and lets you inspect chunk details.
+`Ctrl+Click` on a chunk opens a detail view with `hi -v` and `try-free`.
+
+### Heap Info
+Shows `arenas`, `heap`, and `bins` outputs in one place.
+Useful for understanding allocator state while stepping through execution.
+
+## Other Features
+
 - **External tooling bridge**: `socat` listens on TCP port `0xdead`, so tools like pwntools can connect.
+- **Tab context menu actions**: Right-click a tab to change its text font size or move it to another Pwndbg tool window.
 
 ## Requirements
 
@@ -26,12 +51,8 @@ A CLion plugin built for CTFs that brings Pwndbg-powered GDB workflows into a mo
 4. Start `Debug`.
 5. Open the `Pwndbg` tool window.
 
-## Development
+## Download
 
-Build the plugin:
+You can download the latest release from here:
 
-```bash
-./gradlew buildPlugin
-```
-
-The packaged `.jar` will be in `build/libs/`.
+- `https://github.com/Yu212/clion-pwndbg-bridge/releases/tag/latest`
