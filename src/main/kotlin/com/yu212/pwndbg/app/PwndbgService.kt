@@ -37,10 +37,7 @@ class PwndbgService(private val project: Project): Disposable {
         val command: String,
         val rawOutput: RawOutput,
         val segments: List<AnsiSegment>
-    ) {
-        val isError: Boolean
-            get() = rawOutput.isError
-    }
+    )
 
     private val log = Logger.getInstance(PwndbgService::class.java)
     private var initialized = false
@@ -50,10 +47,6 @@ class PwndbgService(private val project: Project): Disposable {
 
     @Volatile
     private var lastUnsupportedProcessClass: String? = null
-
-    companion object {
-        private const val DEFAULT_TTY_PATH = "/tmp/ttyPWN"
-    }
 
     private val toolWindowManager: PwndbgToolWindowManager
         get() = project.getService(PwndbgToolWindowManager::class.java)
@@ -201,11 +194,12 @@ class PwndbgService(private val project: Project): Disposable {
             return
         }
         val tcpPort = settings.getSocatPort()
+        val ttyPath = settings.getSocatTtyPath()
         val command = listOf(
             "socat",
             "-d",
             "-d",
-            "pty,raw,echo=0,link=$DEFAULT_TTY_PATH",
+            "pty,raw,echo=0,link=$ttyPath",
             "tcp-listen:$tcpPort,reuseaddr"
         )
         try {
@@ -213,7 +207,7 @@ class PwndbgService(private val project: Project): Disposable {
                     .redirectErrorStream(true)
                     .start()
             socatProcess = process
-            commandPanel?.printOutput("[pwndbg] socat started on tcp:$tcpPort -> $DEFAULT_TTY_PATH\n", isError = false)
+            commandPanel?.printOutput("[pwndbg] socat started on tcp:$tcpPort -> $ttyPath\n", isError = false)
             ApplicationManager.getApplication().executeOnPooledThread {
                 BufferedReader(InputStreamReader(process.inputStream)).useLines { lines ->
                     lines.forEach { line ->

@@ -1,9 +1,11 @@
 package com.yu212.pwndbg.features.address
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import com.yu212.pwndbg.app.PwndbgToolWindowManager
+import com.yu212.pwndbg.settings.PwndbgSettingsService
 import com.yu212.pwndbg.shared.ui.PwndbgTabPanel
 import com.yu212.pwndbg.shared.ui.components.CommandHistoryField
 import java.awt.BorderLayout
@@ -28,6 +30,9 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
 
     private var inspectView: AddressInspectionView? = null
     private var currentFontSize: Int? = null
+
+    private val settings: PwndbgSettingsService
+        get() = ApplicationManager.getApplication().getService(PwndbgSettingsService::class.java)
 
     init {
         val inputPanel = JPanel(BorderLayout(8, 0))
@@ -91,7 +96,7 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
         val created = AddressInspectionView(
             project = project,
             tabId = id,
-            initialState = AddressInspectionTabState(address = baseAddress),
+            initialState = newInitialState(baseAddress),
             onOpenInNewTab = ::openCurrentStateInNewTab
         )
         inspectView = created
@@ -115,7 +120,7 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
             AddressTemporaryTabPanel(
                 project = project,
                 id = tabId,
-                initialState = AddressInspectionTabState(address = baseAddress)
+                initialState = newInitialState(baseAddress)
             )
         }
         manager.showTemporaryTabBesideHost(
@@ -154,6 +159,14 @@ class AddressPanel(private val project: Project): PwndbgTabPanel {
 
     private fun isCtrlModified(event: ActionEvent): Boolean {
         return (event.modifiers and ActionEvent.CTRL_MASK) != 0
+    }
+
+    private fun newInitialState(address: String): AddressInspectionTabState {
+        return AddressInspectionTabState(
+            address = address,
+            xFormat = settings.getAddressDefaultXFormat(),
+            telescopeCount = settings.getAddressDefaultTelescopeCount()
+        )
     }
 
     override fun dispose() {

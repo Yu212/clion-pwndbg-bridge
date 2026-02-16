@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.Configurable
 import com.intellij.ui.JBIntSpinner
 import com.intellij.ui.components.JBCheckBox
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.Cell
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.selected
@@ -29,6 +30,14 @@ class PwndbgSettingsConfigurable: Configurable {
         PwndbgSettingsService.MAX_SOCAT_PORT,
         1
     )
+    private val socatTtyPathField = JBTextField(settings.getSocatTtyPath(), 12)
+    private val addressDefaultXFormatField = JBTextField(settings.getAddressDefaultXFormat(), 12)
+    private val addressDefaultTelescopeCountSpinner = JBIntSpinner(
+        settings.getAddressDefaultTelescopeCount(),
+        PwndbgSettingsService.MIN_ADDRESS_TELESCOPE_COUNT,
+        PwndbgSettingsService.MAX_ADDRESS_TELESCOPE_COUNT,
+        1
+    )
     private lateinit var enableSocatCell: Cell<JBCheckBox>
     private var panel: JComponent? = null
 
@@ -50,6 +59,15 @@ class PwndbgSettingsConfigurable: Configurable {
                     row("Port") {
                         cell(socatPortSpinner)
                     }.enabledIf(enableSocatCell.selected)
+                    row("TTY path") {
+                        cell(socatTtyPathField)
+                    }.enabledIf(enableSocatCell.selected)
+                }
+                row("Default x format") {
+                    cell(addressDefaultXFormatField)
+                }
+                row("Default telescope count") {
+                    cell(addressDefaultTelescopeCountSpinner)
                 }
             }
             reset()
@@ -62,7 +80,10 @@ class PwndbgSettingsConfigurable: Configurable {
         return contextHistorySpinner.number != settings.getContextHistoryMax() ||
                 commandHistorySpinner.number != settings.getCommandHistoryMax() ||
                 socatEnabled != settings.isSocatEnabled() ||
-                socatPortSpinner.number != settings.getSocatPort()
+                socatPortSpinner.number != settings.getSocatPort() ||
+                socatTtyPathField.text != settings.getSocatTtyPath() ||
+                addressDefaultXFormatField.text != settings.getAddressDefaultXFormat() ||
+                addressDefaultTelescopeCountSpinner.number != settings.getAddressDefaultTelescopeCount()
     }
 
     override fun apply() {
@@ -70,7 +91,10 @@ class PwndbgSettingsConfigurable: Configurable {
             contextHistorySpinner.number,
             commandHistorySpinner.number,
             enableSocatCell.component.isSelected,
-            socatPortSpinner.number
+            socatPortSpinner.number,
+            socatTtyPathField.text,
+            addressDefaultXFormatField.text,
+            addressDefaultTelescopeCountSpinner.number
         )
     }
 
@@ -81,5 +105,8 @@ class PwndbgSettingsConfigurable: Configurable {
             enableSocatCell.component.isSelected = settings.isSocatEnabled()
         }
         socatPortSpinner.number = settings.getSocatPort()
+        socatTtyPathField.text = settings.getSocatTtyPath()
+        addressDefaultXFormatField.text = settings.getAddressDefaultXFormat()
+        addressDefaultTelescopeCountSpinner.number = settings.getAddressDefaultTelescopeCount()
     }
 }

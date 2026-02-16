@@ -93,20 +93,20 @@ internal class AddressInspectionTimelineStore(private val project: Project) {
     ) {
         val address = tabState.address
         val xFormat = tabState.xFormat
-        val telescopeLines = tabState.telescopeLines
+        val telescopeCount = tabState.telescopeCount
         val key = HistoryKey(address, contextIndex)
         val cached = timelineHistory[key]
         if (cached != null &&
             cached.xinfoSegments.isNotEmpty() &&
             cached.memorySegments.containsKey(xFormat) &&
-            cached.telescopeSegments.size >= telescopeLines
+            cached.telescopeSegments.size >= telescopeCount
         ) {
             onComplete()
             return
         }
         service.executeCommandsSequential(
             PwndbgService.CommandRequest("xinfo $address"),
-            PwndbgService.CommandRequest("telescope $address $telescopeLines"),
+            PwndbgService.CommandRequest("telescope $address $telescopeCount"),
             PwndbgService.CommandRequest("x/$xFormat $address")
         ) { (xinfo, telescope, memory) ->
             val telescopeByLine = AnsiSegment.splitByLines(telescope.segments)
@@ -156,15 +156,15 @@ internal class AddressInspectionTimelineStore(private val project: Project) {
 
     fun fetchTelescopeAt(tabState: AddressInspectionTabState, contextIndex: Int, onComplete: () -> Unit) {
         val address = tabState.address
-        val telescopeLines = tabState.telescopeLines
+        val telescopeCount = tabState.telescopeCount
         val key = HistoryKey(address, contextIndex)
         val cached = timelineHistory[key]
-        if (cached != null && cached.telescopeSegments.size >= telescopeLines) {
+        if (cached != null && cached.telescopeSegments.size >= telescopeCount) {
             onComplete()
             return
         }
         service.executeCommandCaptureDecoded(
-            PwndbgService.CommandRequest("telescope $address $telescopeLines")
+            PwndbgService.CommandRequest("telescope $address $telescopeCount")
         ) { telescope ->
             val telescopeByLine = AnsiSegment.splitByLines(telescope.segments)
             val entry = timelineHistory[key]
@@ -181,7 +181,7 @@ internal class AddressInspectionTimelineStore(private val project: Project) {
         }
     }
 
-    fun getKnownTelescopeLineCount(tabState: AddressInspectionTabState, contextIndex: Int): Int {
+    fun getKnownTelescopeCount(tabState: AddressInspectionTabState, contextIndex: Int): Int {
         val key = HistoryKey(tabState.address, contextIndex)
         return timelineHistory[key]?.telescopeSegments?.size ?: 0
     }
@@ -193,7 +193,7 @@ internal class AddressInspectionTimelineStore(private val project: Project) {
     ): RenderResult {
         val address = tabState.address
         val xFormat = tabState.xFormat
-        val telescopeLines = tabState.telescopeLines
+        val telescopeCount = tabState.telescopeCount
         val historyLabel = historyLabel(contextIndex, latestIndex)
         if (contextIndex == null) {
             val segments = infoSegments("No context history available.")
@@ -208,7 +208,7 @@ internal class AddressInspectionTimelineStore(private val project: Project) {
 
         val xinfo = entry.xinfoSegments.ifEmpty { infoSegments("No xinfo data at this context.") }
         val memory = entry.memorySegments[xFormat] ?: errorSegments("x/$xFormat is unavailable at this context.")
-        val telescope = renderTelescope(entry.telescopeSegments, telescopeLines)
+        val telescope = renderTelescope(entry.telescopeSegments, telescopeCount)
         return RenderResult(
             historyLabelText = historyLabel,
             xinfoSegments = xinfo,

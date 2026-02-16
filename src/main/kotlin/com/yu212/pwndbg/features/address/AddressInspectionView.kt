@@ -69,10 +69,10 @@ internal class AddressInspectionView(
     private val xinfoView = CollapsibleSection("xinfo", project)
     private val telescopeTitleLabel = JLabel()
     private val telescopeDecreaseAction = object: AnAction("Decrease Count", null, AllIcons.General.Remove) {
-        override fun actionPerformed(e: AnActionEvent) = updateTelescopeLines(-1)
+        override fun actionPerformed(e: AnActionEvent) = updateTelescopeCount(-1)
     }
     private val telescopeIncreaseAction = object: AnAction("Increase Count", null, AllIcons.General.Add) {
-        override fun actionPerformed(e: AnActionEvent) = updateTelescopeLines(1)
+        override fun actionPerformed(e: AnActionEvent) = updateTelescopeCount(1)
     }
     private val telescopeView = CollapsibleSection(
         titleComponent = telescopeTitleLabel,
@@ -159,18 +159,18 @@ internal class AddressInspectionView(
         renderFromHistory()
     }
 
-    private fun updateTelescopeLines(delta: Int) {
-        val nextValue = (state.telescopeLines + delta).coerceAtLeast(1)
-        val oldValue = state.telescopeLines
+    private fun updateTelescopeCount(delta: Int) {
+        val nextValue = (state.telescopeCount + delta).coerceAtLeast(1)
+        val oldValue = state.telescopeCount
         if (nextValue == oldValue) return
 
-        state = state.copy(telescopeLines = nextValue)
+        state = state.copy(telescopeCount = nextValue)
         updateTelescopeTitle()
 
         val contextIndex = effectiveContextIndex()
         val latest = latestContextIndex
         if (contextIndex != null && latest != null && contextIndex == latest && nextValue > oldValue) {
-            val known = timelineStore.getKnownTelescopeLineCount(state, contextIndex)
+            val known = timelineStore.getKnownTelescopeCount(state, contextIndex)
             if (nextValue > known) {
                 timelineStore.fetchTelescopeAt(state, contextIndex) {
                     renderFromHistory()
@@ -217,7 +217,7 @@ internal class AddressInspectionView(
     }
 
     private fun updateTelescopeTitle() {
-        telescopeTitleLabel.text = "telescope ${state.telescopeLines}"
+        telescopeTitleLabel.text = "telescope ${state.telescopeCount}"
     }
 
     private fun refreshOutputPanel() {
