@@ -55,4 +55,4 @@ Useful for understanding allocator state while stepping through execution.
 
 You can download the latest release from here:
 
-- `https://github.com/Yu212/clion-pwndbg-bridge/releases/tag/latest`
+- https://github.com/Yu212/clion-pwndbg-bridge/releases/tag/latest
