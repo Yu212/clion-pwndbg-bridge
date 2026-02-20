@@ -32,8 +32,8 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir -p dist
-          cp build/libs/pwndbg-bridge-1.0.jar dist/pwndbg-bridge-latest.jar
-          cp build/distributions/pwndbg-bridge-1.0.zip dist/pwndbg-bridge-latest.zip
+          cp build/libs/pwnlion-1.0.jar dist/pwnlion-latest.jar
+          cp build/distributions/pwnlion-1.0.zip dist/pwnlion-latest.zip
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
@@ -49,7 +49,7 @@ jobs:
           prerelease: true
           allowUpdates: true
           removeArtifacts: true
-          artifacts: dist/pwndbg-bridge-latest.jar,dist/pwndbg-bridge-latest.zip
+          artifacts: dist/pwnlion-latest.jar,dist/pwnlion-latest.zip
           body: |
             Auto-updated from `main`.
             - Commit: `${{ github.sha }}`

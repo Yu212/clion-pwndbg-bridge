@@ -1,6 +1,6 @@
 <idea-plugin>
-    <id>com.yu212.pwndbgbridge</id>
-    <name>Pwndbg Bridge</name>
+    <id>com.yu212.pwnlion</id>
+    <name>PwnLion</name>
     <vendor email="yu212.mc@gmail.com">Yu_212</vendor>
 
     <depends>com.intellij.modules.clion</depends>
@@ -12,21 +12,21 @@
     </dependencies>
 
     <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="com.yu212.pwndbg.app.PwndbgStartupActivity"/>
+        <postStartupActivity implementation="com.yu212.pwnlion.app.PwndbgStartupActivity"/>
         <applicationConfigurable
-                displayName="Pwndbg Bridge"
-                id="com.yu212.pwndbg.settings"
-                instance="com.yu212.pwndbg.settings.PwndbgSettingsConfigurable"/>
+                displayName="PwnLion"
+                id="com.yu212.pwnlion.settings"
+                instance="com.yu212.pwnlion.settings.PwndbgSettingsConfigurable"/>
     </extensions>
 
     <actions>
         <group id="PwndbgTabMoveGroup"
-               class="com.yu212.pwndbg.shared.ui.actions.MoveTabActionGroup"
+               class="com.yu212.pwnlion.shared.ui.actions.MoveTabActionGroup"
                popup="true">
             <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
         </group>
         <group id="PwndbgTabFontSizeGroup"
-               class="com.yu212.pwndbg.shared.ui.actions.TabFontSizeActionGroup"
+               class="com.yu212.pwnlion.shared.ui.actions.TabFontSizeActionGroup"
                popup="true">
             <add-to-group group-id="ToolWindowContextMenu" anchor="last"/>
         </group>
